@@ -20,6 +20,12 @@ The bridge:
 
 The bridge **never invents fixes** — it sources every recommendation from the CFT taxonomy. Same source of truth, scanner-specific delivery.
 
+## Scope: sound fixes, not vendor acceptance
+
+This adapter recommends remediations that fix the underlying CWE — sourced from the [CFT taxonomy](https://github.com/Cashiuus/cft-taxonomy). It deliberately does **not** embed Veracode's mitigation policy or approved-cleanser catalog. Whether a specific library/API call is auto-recognized by Veracode (or requires a mitigation submission for human review) is a separate concern, governed by Veracode's own policy.
+
+For Veracode-specific acceptance criteria — supported cleansers, mitigation workflow, and policy configuration — consult Veracode's documentation: [Veracode Docs](https://docs.veracode.com/) (search for "cleansers", "mitigations", or "remediation acceptance" for the topic you need).
+
 ## Supported input formats
 
 | Format | Source | Notes |
