@@ -15,7 +15,7 @@ def main(argv: "list[str] | None" = None) -> int:
         prog="cft-veracode",
         description="Convert Veracode scanner output into CFT-based remediation plans.",
     )
-    parser.add_argument("--version", action="version", version=f"cft-veracode-bridge {__version__}")
+    parser.add_argument("--version", action="version", version=f"cft-veracode {__version__}")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_ingest = sub.add_parser("ingest", help="Ingest a Veracode finding export and emit a report")

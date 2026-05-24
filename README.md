@@ -1,11 +1,11 @@
-# cft-veracode-bridge
+# cft-veracode
 
 Turn Veracode scanner output into actionable [**CFT (CWE Fix Technique)**](https://github.com/Cashiuus/cft-taxonomy) remediation plans.
 
 This is **Layer 3** of the CFT integration architecture:
 
 ```
-Layer 3 — cft-veracode-bridge   (THIS package — Veracode-aware adapter)
+Layer 3 — cft-veracode   (THIS package — Veracode-aware adapter)
 Layer 2 — cft-resolver           (CWE → Plan; https://github.com/Cashiuus/cft-resolver)
 Layer 1 — cft-taxonomy           (the taxonomy data; https://github.com/Cashiuus/cft-taxonomy)
 ```
@@ -33,12 +33,12 @@ All three normalize to the same internal `Finding` model — downstream logic is
 ## Install
 
 ```
-pip install cft-veracode-bridge
+pip install cft-veracode
 # or from source (dev):
 pip install -e .
 ```
 
-`cft-veracode-bridge` depends on [`cft-resolver`](https://github.com/Cashiuus/cft-resolver), which bundles a versioned copy of the CFT taxonomy. No separate taxonomy install is required.
+`cft-veracode` depends on [`cft-resolver`](https://github.com/Cashiuus/cft-resolver), which bundles a versioned copy of the CFT taxonomy. No separate taxonomy install is required.
 
 ## CLI
 
@@ -106,7 +106,7 @@ Per scan, grouped by (severity → fix family → CWE):
 
 This adapter pins to a `cft-resolver` major version, which in turn bundles a specific CFT taxonomy version. When the taxonomy moves (v0.2 → v0.3 → v1.0), this adapter releases a matching version.
 
-- `cft-veracode-bridge 0.1.x` requires `cft-resolver ~= 0.1` (CFT taxonomy v0.2)
+- `cft-veracode 0.1.x` requires `cft-resolver ~= 0.1` (CFT taxonomy v0.2)
 
 ## Related repos
 

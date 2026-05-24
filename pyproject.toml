@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cft-veracode-bridge"
+name = "cft-veracode"
 version = "0.1.0"
 description = "Veracode scanner findings → CFT (CWE Fix Technique) remediation plans"
 readme = "README.md"
@@ -33,7 +33,7 @@ test = ["pytest>=7"]
 cft-veracode = "cft_veracode.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/Cashiuus/cft-veracode-bridge"
+Homepage = "https://github.com/Cashiuus/cft-veracode"
 Taxonomy = "https://github.com/Cashiuus/cft-taxonomy"
 Resolver = "https://github.com/Cashiuus/cft-resolver"
 
