@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Claude Code local overrides
+.claude/settings.local.json
+
+# Real Veracode exports (don't commit; fixtures are synthetic)
+*real-scan*.json
+local-scans/

@@ -1,0 +1,54 @@
+{
+  "scan_id": "scan-2026-test-001",
+  "scan_status": "SUCCESS",
+  "app_name": "DemoApp",
+  "scan_engine_version": "25.3.0",
+  "findings": [
+    {
+      "title": "Improper Neutralization of Special Elements used in an SQL Command",
+      "issue_id": 1,
+      "gob": "AAB",
+      "severity": 4,
+      "issue_type": "SQL Injection",
+      "issue_type_id": "sqli",
+      "cwe_id": "89",
+      "display_text": "User input flows into a dynamic SQL query without parameterization.",
+      "files": {
+        "source_file": {
+          "file": "src/main/java/com/example/dao/UserDao.java",
+          "line": 87,
+          "function_name": "findById",
+          "qualified_function_name": "com.example.dao.UserDao.findById"
+        }
+      }
+    },
+    {
+      "title": "Improper Neutralization of Special Elements used in an SQL Command",
+      "issue_id": 2,
+      "severity": 4,
+      "issue_type": "SQL Injection",
+      "cwe_id": "CWE-89",
+      "files": {
+        "source_file": {
+          "file": "src/main/java/com/example/dao/OrderDao.java",
+          "line": 122,
+          "function_name": "search"
+        }
+      }
+    },
+    {
+      "title": "Cross-site Scripting",
+      "issue_id": 3,
+      "severity": 3,
+      "issue_type": "XSS",
+      "cwe_id": "79",
+      "files": {
+        "source_file": {
+          "file": "src/main/webapp/views/profile.jsp",
+          "line": 14,
+          "function_name": "render"
+        }
+      }
+    }
+  ]
+}

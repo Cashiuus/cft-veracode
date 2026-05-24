@@ -1,0 +1,69 @@
+{
+  "application_name": "DemoApp",
+  "sandbox_name": "main-policy-scan",
+  "scan_type": "STATIC",
+  "_embedded": {
+    "findings": [
+      {
+        "issue_id": 10001,
+        "scan_type": "STATIC",
+        "description": "Direct string concatenation into JDBC query.",
+        "violates_policy": true,
+        "finding_status": {
+          "status": "OPEN",
+          "resolution": "UNRESOLVED",
+          "first_found_date": "2026-04-01T12:00:00Z",
+          "last_seen_date": "2026-05-20T08:00:00Z",
+          "mitigation_review_status": "NONE"
+        },
+        "finding_details": {
+          "severity": 4,
+          "cwe": { "id": 89, "name": "SQL Injection" },
+          "file_path": "src/main/java/com/example/dao/UserDao.java",
+          "file_name": "UserDao.java",
+          "file_line_number": 87,
+          "function_name": "findById",
+          "module": "user-service"
+        }
+      },
+      {
+        "issue_id": 10002,
+        "scan_type": "STATIC",
+        "description": "Reflected XSS via JSP scriptlet.",
+        "violates_policy": true,
+        "finding_status": {
+          "status": "OPEN",
+          "resolution": "UNRESOLVED",
+          "mitigation_review_status": "NONE"
+        },
+        "finding_details": {
+          "severity": 3,
+          "cwe": { "id": 79, "name": "Cross-site Scripting" },
+          "file_path": "src/main/webapp/views/profile.jsp",
+          "file_name": "profile.jsp",
+          "file_line_number": 14,
+          "function_name": "render"
+        }
+      },
+      {
+        "issue_id": 10003,
+        "scan_type": "STATIC",
+        "description": "Use of weak hash function MD5 for password storage.",
+        "violates_policy": true,
+        "finding_status": {
+          "status": "CLOSED",
+          "resolution": "ACCEPTED",
+          "mitigation_review_status": "ACCEPTED"
+        },
+        "finding_details": {
+          "severity": 4,
+          "cwe": { "id": 327, "name": "Use of a Broken or Risky Cryptographic Algorithm" },
+          "file_path": "src/main/java/com/example/auth/Hasher.java",
+          "file_name": "Hasher.java",
+          "file_line_number": 31,
+          "function_name": "hashPassword"
+        }
+      }
+    ]
+  }
+}
