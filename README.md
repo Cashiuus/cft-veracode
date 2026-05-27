@@ -48,29 +48,46 @@ pip install -e .
 
 ## CLI
 
+Two subcommands: `fetch` (live API call) and `ingest` (file-based).
+
+### `fetch` — pull findings live from the Veracode REST API
+
 ```
-# Ingest a Pipeline Scan JSON file and produce a Markdown report
+# Fetch the latest STATIC policy-scan findings for an app and produce a report
+cft-veracode fetch --app DemoApp --output report.md
+
+# Fetch from a specific sandbox instead of the policy scan
+cft-veracode fetch --app DemoApp --sandbox DevSandbox --output report.md
+
+# Identify the app by GUID instead of name
+cft-veracode fetch --app 11111111-2222-3333-4444-555555555555 --output report.md
+
+# Override language, cap effort, filter severity
+cft-veracode fetch --app DemoApp --language java --effort-cap Medium --min-severity High
+```
+
+**Credentials** are discovered automatically in this order:
+1. `--api-id` / `--api-secret` CLI flags (not recommended)
+2. Environment variables `VERACODE_API_KEY_ID` and `VERACODE_API_KEY_SECRET`
+3. `~/.veracode/credentials` file (standard Veracode tooling location with `[default]` section)
+
+If you already use the official Veracode CLI tools (`veracode-pipeline-scan`, etc.), `~/.veracode/credentials` is likely already set up and this adapter will pick it up.
+
+Pagination is handled internally — large apps with hundreds of findings are fetched in full across HAL `_links.next` pages before the report is built.
+
+### `ingest` — file-based (when you already have an export)
+
+```
+# Pipeline Scan JSON (from `veracode-pipeline-scan` CLI output)
 cft-veracode ingest scan.json --format pipeline --output report.md
 
-# Ingest Findings v2 API JSON
+# Findings v2 API JSON (already exported)
 cft-veracode ingest findings.json --format api --output report.md
 
-# Ingest a SARIF file
+# SARIF (from Veracode SAST export, or any SARIF-emitting scanner)
 cft-veracode ingest scan.sarif --format sarif --output report.md
 
-# Override inferred language for the whole scan
-cft-veracode ingest scan.json --format pipeline --language java
-
-# Filter by minimum severity
-cft-veracode ingest scan.json --format pipeline --min-severity High
-
-# Cap remediation effort (skip High-effort architectural changes)
-cft-veracode ingest scan.json --format pipeline --effort-cap Medium
-
-# Skip findings already mitigated in Veracode
-cft-veracode ingest findings.json --format api --skip-mitigated
-
-# Output JSON for downstream tooling
+# JSON output for downstream tooling
 cft-veracode ingest scan.json --format pipeline --output-format json
 ```
 
