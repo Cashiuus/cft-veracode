@@ -90,3 +90,58 @@ def test_json_output_shape():
         assert "cwe_id" in g
         assert "findings" in g
         assert "plan" in g
+
+
+def test_group_header_includes_issue_type():
+    """The group header should show the issue_type/title so it's clear what we're addressing."""
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    report = build_report(findings)
+    md = report.to_markdown()
+    sqli_headers = [line for line in md.splitlines() if line.startswith("### Group") and "CWE-89" in line]
+    assert len(sqli_headers) == 1
+    assert "SQL Injection" in sqli_headers[0]
+
+
+def test_findings_table_includes_details_column():
+    """The affected-findings table should include a Details column with a Markdown link when available."""
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    report = build_report(findings)
+    md = report.to_markdown()
+    # Header row includes Details
+    assert "| Severity | File | Line | Issue ID | Title | Details |" in md
+    # SQLi finding 1 has flaw_details_link in the fixture — should render as a Markdown link
+    assert "[view](https://web.analysiscenter.veracode.com" in md
+
+
+def test_report_omits_regex_patterns():
+    """Per UX direction: keep checklist + notes; drop the regex patterns themselves.
+
+    The taxonomy stores a grep_pattern like
+        (executeQuery|executeUpdate|cursor\\.execute|conn\\.query|Statement\\.execute)
+    on CFT021.01. That regex must NOT appear in the rendered report, and the
+    "_grep pattern:_" / "_semgrep rule:_" labels must not appear either.
+
+    Prose references to grep/semgrep inside a sub-technique's `notes` field
+    are fine — they're guidance for the reader, not raw scanner patterns.
+    """
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    report = build_report(findings)
+    md = report.to_markdown()
+    # No raw regex content from the SQLi grep_pattern
+    assert "executeQuery|executeUpdate|cursor" not in md
+    # No labels for regex / rule fields
+    assert "_grep pattern:_" not in md
+    assert "_semgrep rule:_" not in md
+    # Checklist must still appear as part of the verification block
+    assert "_checklist:_" in md
+
+
+def test_json_includes_issue_type_and_flaw_link():
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    report = build_report(findings)
+    data = json.loads(report.to_json())
+    sqli_group = next(g for g in data["groups"] if g["cwe_id"] == "CWE-89")
+    assert sqli_group["issue_type"] == "SQL Injection"
+    f_with_url = next(f for f in sqli_group["findings"] if f["finding_id"] == "1")
+    assert f_with_url["flaw_details_url"] is not None
+    assert "veracode" in f_with_url["flaw_details_url"]

@@ -150,7 +150,9 @@ def render_markdown(report: Report) -> str:
 
 def _render_group_markdown(add, idx: int, g: FindingGroup) -> None:
     cwe = g.cwe_id or "(no CWE)"
-    add(f"### Group {idx}: {cwe} — {g.count} finding(s) in `{g.file_root}`")
+    issue_type = _group_issue_type(g)
+    header = f"### Group {idx}: {cwe} — {issue_type} — {g.count} finding(s) in `{g.file_root}`"
+    add(header)
     add("")
     summary = [
         f"**Max severity:** {g.max_severity}",
@@ -168,16 +170,29 @@ def _render_group_markdown(add, idx: int, g: FindingGroup) -> None:
 
     add("**Affected findings:**")
     add("")
-    add("| Severity | File | Line | Issue ID | Title |")
-    add("|---|---|---|---|---|")
+    add("| Severity | File | Line | Issue ID | Title | Details |")
+    add("|---|---|---|---|---|---|")
     for f in sorted(g.findings, key=lambda x: (-SEVERITY_RANK.get(x.severity, -1), x.location.file_path or "")):
         file = (f.location.file_path or "?")
         line = str(f.location.line) if f.location.line else "—"
         fid = f.veracode_flaw_id or f.finding_id
-        add(f"| {f.severity} | `{file}` | {line} | `{fid}` | {f.title} |")
+        details = f"[view]({f.flaw_details_url})" if f.flaw_details_url else "—"
+        add(f"| {f.severity} | `{file}` | {line} | `{fid}` | {f.title} | {details} |")
     add("")
     add("---")
     add("")
+
+
+def _group_issue_type(g: FindingGroup) -> str:
+    """Pick the most representative finding title to display in the group header."""
+    if not g.findings:
+        return "(unknown)"
+    # All findings in a group share the CWE, so titles are typically uniform.
+    # Use the most common title to be defensive against per-finding variance.
+    counts: dict[str, int] = {}
+    for f in g.findings:
+        counts[f.title] = counts.get(f.title, 0) + 1
+    return max(counts, key=counts.get)
 
 
 def _render_plan_markdown(add, plan) -> None:
@@ -245,11 +260,12 @@ def _render_entry(add, entry, depth: int) -> None:
             add("")
             break  # one language entry is enough; the rest are mapped elsewhere
 
-    if st.verification:
+    # Verification block — render checklist + notes only; suppress regex
+    # patterns (grep / semgrep rules) since they're noise in a remediation
+    # report aimed at developers.
+    if st.verification and (st.verification.checklist or st.verification.notes):
         add("**Verification:**")
         add("")
-        if st.verification.grep_pattern:
-            add(f"- _grep pattern:_ `{st.verification.grep_pattern}`")
         if st.verification.checklist:
             add("- _checklist:_")
             for c in st.verification.checklist:
@@ -301,6 +317,7 @@ def render_json(report: Report) -> str:
 def _group_to_dict(g: FindingGroup) -> dict:
     return {
         "cwe_id": g.cwe_id,
+        "issue_type": _group_issue_type(g),
         "file_root": g.file_root,
         "language": g.language,
         "max_severity": g.max_severity,
@@ -320,6 +337,7 @@ def _finding_to_dict(f: Finding) -> dict:
         "veracode_flaw_id": f.veracode_flaw_id,
         "mitigation_status": f.mitigation_status,
         "violates_policy": f.violates_policy,
+        "flaw_details_url": f.flaw_details_url,
     }
 
 

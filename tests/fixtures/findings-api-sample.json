@@ -9,6 +9,7 @@
         "scan_type": "STATIC",
         "description": "Direct string concatenation into JDBC query.",
         "violates_policy": true,
+        "flaw_details_link": "https://analysiscenter.veracode.com/auth/index.jsp#ReviewResultsStaticFlaws:1:10001:::application_findings",
         "finding_status": {
           "status": "OPEN",
           "resolution": "UNRESOLVED",

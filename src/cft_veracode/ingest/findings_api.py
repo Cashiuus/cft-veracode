@@ -82,6 +82,7 @@ def parse_findings_api(doc: dict) -> list[Finding]:
 
         mitigation_status = _mitigation_status(raw, status)
         review = status.get("mitigation_review_status")
+        flaw_url = _flaw_details_url(raw)
 
         out.append(Finding(
             finding_id=finding_id,
@@ -96,9 +97,29 @@ def parse_findings_api(doc: dict) -> list[Finding]:
             mitigation_status=mitigation_status,
             mitigation_review=review,
             violates_policy=raw.get("violates_policy"),
+            flaw_details_url=flaw_url,
             scanner_native=raw,
         ))
     return out
+
+
+def _flaw_details_url(raw: dict) -> "str | None":
+    """Locate a deep-link URL to the finding in Veracode's UI.
+
+    The Findings v2 response may expose this at the top-level field
+    `flaw_details_link` (some response shapes) or under the HAL block
+    `_links.html.href` / `_links.self.href`. We accept any of them.
+    """
+    direct = raw.get("flaw_details_link") or raw.get("flaw_details_url")
+    if direct:
+        return direct
+    links = raw.get("_links") or {}
+    if isinstance(links, dict):
+        for key in ("html", "self"):
+            blk = links.get(key)
+            if isinstance(blk, dict) and blk.get("href"):
+                return blk["href"]
+    return None
 
 
 def _mitigation_status(raw: dict, status: dict) -> "str | None":

@@ -13,6 +13,7 @@
       "issue_type_id": "sqli",
       "cwe_id": "89",
       "display_text": "User input flows into a dynamic SQL query without parameterization.",
+      "flaw_details_link": "https://web.analysiscenter.veracode.com/auth/index.jsp#StaticOverview:01:01:01:01:1",
       "files": {
         "source_file": {
           "file": "src/main/java/com/example/dao/UserDao.java",

@@ -73,6 +73,7 @@ def parse_pipeline_scan(doc: dict) -> list[Finding]:
             veracode_flaw_id=str(raw.get("issue_id")) if raw.get("issue_id") is not None else None,
             mitigation_status=None,  # Pipeline scans don't carry mitigation history
             violates_policy=None,
+            flaw_details_url=raw.get("flaw_details_link") or raw.get("flaw_details_url"),
             scanner_native=raw,
         ))
     return out

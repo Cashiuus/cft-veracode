@@ -45,3 +45,13 @@ def test_pipeline_preserves_native_record():
     f = findings[0]
     assert f.scanner_native["issue_id"] == 1
     assert f.veracode_flaw_id == "1"
+
+
+def test_pipeline_extracts_flaw_details_link():
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    f = next(x for x in findings if x.finding_id == "1")
+    assert f.flaw_details_url is not None
+    assert "StaticOverview" in f.flaw_details_url
+    # Finding without a link in the fixture should leave the field None
+    f2 = next(x for x in findings if x.finding_id == "2")
+    assert f2.flaw_details_url is None

@@ -40,3 +40,35 @@ def test_api_function_and_file():
     assert xss.location.file_path == "src/main/webapp/views/profile.jsp"
     assert xss.location.line == 14
     assert xss.location.function_name == "render"
+
+
+def test_api_extracts_flaw_details_link():
+    """The SQLi finding in the fixture carries flaw_details_link directly on the record."""
+    findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
+    sqli = next(f for f in findings if f.cwe_id == "CWE-89")
+    assert sqli.flaw_details_url is not None
+    assert "veracode.com" in sqli.flaw_details_url
+
+
+def test_api_flaw_details_falls_back_to_links_block():
+    """If `flaw_details_link` isn't on the record, fall back to _links.html.href."""
+    from cft_veracode.ingest import parse_findings_api
+    doc = {
+        "_embedded": {
+            "findings": [{
+                "issue_id": 99,
+                "finding_status": {"status": "OPEN", "resolution": "UNRESOLVED"},
+                "finding_details": {
+                    "severity": 3,
+                    "cwe": {"id": 79, "name": "XSS"},
+                    "file_path": "x.java",
+                    "file_line_number": 1,
+                },
+                "_links": {
+                    "html": {"href": "https://analysiscenter.veracode.com/some/path"},
+                },
+            }],
+        },
+    }
+    f = parse_findings_api(doc)[0]
+    assert f.flaw_details_url == "https://analysiscenter.veracode.com/some/path"

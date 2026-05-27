@@ -63,6 +63,7 @@ class Finding:
     mitigation_status: Optional[str] = None    # e.g. "ACCEPTED" | "PROPOSED" | "REJECTED"
     mitigation_review: Optional[str] = None
     violates_policy: Optional[bool] = None
+    flaw_details_url: Optional[str] = None     # Deep-link to the finding in Veracode's UI
     # Raw record preserved for debugging / round-trip:
     scanner_native: dict = field(default_factory=dict)
 
