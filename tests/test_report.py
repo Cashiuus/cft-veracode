@@ -133,15 +133,16 @@ def test_group_header_includes_issue_type():
     assert "SQL Injection" in sqli_headers[0]
 
 
-def test_findings_table_includes_details_column():
-    """The affected-findings table should include a Details column with a Markdown link when available."""
+def test_findings_table_includes_veracode_link_column():
+    """The affected-findings table should include a Veracode column with a
+    Markdown link to the flaw details page when available."""
     findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
     report = build_report(findings)
     md = report.to_markdown()
-    # Header row includes Details
-    assert "| Severity | File | Line | Issue ID | Title | Details |" in md
+    # Header row includes the Veracode-link column
+    assert "| Severity | File | Line | Issue ID | Title | Veracode |" in md
     # SQLi finding 1 has flaw_details_link in the fixture — should render as a Markdown link
-    assert "[view](https://web.analysiscenter.veracode.com" in md
+    assert "[Guidance](https://web.analysiscenter.veracode.com" in md
 
 
 def test_group_section_order_findings_before_remediation():
@@ -167,7 +168,7 @@ def test_group_section_order_findings_before_remediation():
 
     # Within the SQLi group, the findings table header must precede the
     # plan's primary-fix label.
-    table_idx = md.index("| Severity | File | Line | Issue ID | Title | Details |", sqli_idx)
+    table_idx = md.index("| Severity | File | Line | Issue ID | Title | Veracode |", sqli_idx)
     plan_idx  = md.index("**Primary fix (Sufficient", sqli_idx)
     assert sqli_idx < table_idx < plan_idx, (
         f"Expected order: group header ({sqli_idx}) -> findings table "

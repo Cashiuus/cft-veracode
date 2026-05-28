@@ -170,13 +170,13 @@ def _render_group_markdown(add, idx: int, g: FindingGroup) -> None:
 
     # Affected findings — surfaced BEFORE the fix so the reader knows what
     # they're looking at (which files, which lines) before reading guidance.
-    add("| Severity | File | Line | Issue ID | Title | Details |")
+    add("| Severity | File | Line | Issue ID | Title | Veracode |")
     add("|---|---|---|---|---|---|")
     for f in sorted(g.findings, key=lambda x: (-SEVERITY_RANK.get(x.severity, -1), x.location.file_path or "")):
         file = (f.location.file_path or "?")
         line = str(f.location.line) if f.location.line else "—"
         fid = f.veracode_flaw_id or f.finding_id
-        details = f"[view]({f.flaw_details_url})" if f.flaw_details_url else "—"
+        details = f"[Guidance]({f.flaw_details_url})" if f.flaw_details_url else "—"
         add(f"| {f.severity} | `{file}` | {line} | `{fid}` | {f.title} | {details} |")
     add("")
 
@@ -867,7 +867,7 @@ def _render_html_group(idx: int, g: FindingGroup) -> str:
     meta_pills = (
         f'{_sev_pill(g.max_severity)}'
         f'<span class="pill tag"><strong>{g.count}</strong>finding{"s" if g.count != 1 else ""}</span>'
-        f'<span class="pill tag"><strong>Lang</strong><code>{_esc(g.language or "unknown")}</code></span>'
+        f'<span class="pill tag"><strong>Language</strong><code>{_esc(g.language or "Unknown")}</code></span>'
     )
 
     location_html = (
