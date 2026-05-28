@@ -113,16 +113,16 @@ def test_findings_table_includes_details_column():
     assert "[view](https://web.analysiscenter.veracode.com" in md
 
 
-def test_report_omits_regex_patterns():
-    """Per UX direction: keep checklist + notes; drop the regex patterns themselves.
+def test_report_omits_regex_patterns_and_verification_notes():
+    """Per UX direction: keep checklist + common mistakes; drop the regex
+    patterns and the verification-notes commentary that explains them.
 
     The taxonomy stores a grep_pattern like
         (executeQuery|executeUpdate|cursor\\.execute|conn\\.query|Statement\\.execute)
-    on CFT021.01. That regex must NOT appear in the rendered report, and the
-    "_grep pattern:_" / "_semgrep rule:_" labels must not appear either.
-
-    Prose references to grep/semgrep inside a sub-technique's `notes` field
-    are fine — they're guidance for the reader, not raw scanner patterns.
+    on CFT021.01. Neither the regex itself nor the grep/semgrep field labels
+    must appear in the report. The verification `notes` field is also
+    suppressed — those notes are predominantly scanner-tool commentary about
+    the (now-suppressed) grep pattern, not developer-actionable guidance.
     """
     findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
     report = build_report(findings)
@@ -132,8 +132,13 @@ def test_report_omits_regex_patterns():
     # No labels for regex / rule fields
     assert "_grep pattern:_" not in md
     assert "_semgrep rule:_" not in md
-    # Checklist must still appear as part of the verification block
-    assert "_checklist:_" in md
+    # Verification notes label must not appear; CFT021.01's verification.notes
+    # (cross-reference scanner output) must not leak through either.
+    assert "_notes:_" not in md
+    assert "Cross-reference scanner output" not in md
+    # Verification block must still render with checklist items as bullets.
+    assert "**Verification:**" in md
+    assert "No SQL text is constructed by string concatenation" in md
 
 
 def test_json_includes_issue_type_and_flaw_link():

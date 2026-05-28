@@ -260,18 +260,14 @@ def _render_entry(add, entry, depth: int) -> None:
             add("")
             break  # one language entry is enough; the rest are mapped elsewhere
 
-    # Verification block — render checklist + notes only; suppress regex
-    # patterns (grep / semgrep rules) since they're noise in a remediation
-    # report aimed at developers.
-    if st.verification and (st.verification.checklist or st.verification.notes):
+    # Verification block — render checklist only. grep_pattern and notes are
+    # suppressed: the pattern is scanner-tool noise, and the notes are
+    # predominantly commentary about that pattern.
+    if st.verification and st.verification.checklist:
         add("**Verification:**")
         add("")
-        if st.verification.checklist:
-            add("- _checklist:_")
-            for c in st.verification.checklist:
-                add(f"  - {c}")
-        if st.verification.notes:
-            add(f"- _notes:_ {st.verification.notes}")
+        for c in st.verification.checklist:
+            add(f"- {c}")
         add("")
 
     if st.common_mistakes:
