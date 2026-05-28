@@ -205,12 +205,12 @@ def _render_plan_markdown(add, plan) -> None:
         add("**Primary fix (Sufficient — pick one):**")
         add("")
         for e in plan.primary:
-            _render_entry(add, e, depth=1)
+            _render_entry(add, e, plan.language)
     elif plan.necessary:
         add("**Necessary controls:**")
         add("")
         for e in plan.necessary:
-            _render_entry(add, e, depth=1)
+            _render_entry(add, e, plan.language)
 
     if plan.defense_in_depth:
         add("**Defense in depth (additional layers):**")
@@ -227,7 +227,7 @@ def _render_plan_markdown(add, plan) -> None:
         add("")
 
 
-def _render_entry(add, entry, depth: int) -> None:
+def _render_entry(add, entry, language: Optional[str]) -> None:
     st = entry.sub_technique
     add(f"#### `{st.id}` — {st.name}")
     add("")
@@ -240,25 +240,26 @@ def _render_entry(add, entry, depth: int) -> None:
         add(f"> _Mapping note:_ {entry.notes}")
         add("")
 
-    # Language guidance for the requested language only
-    language = None
-    if hasattr(entry.sub_technique, "language_guidance"):
-        # Find a language entry to render (resolver should already have filtered)
-        for lang, g in st.language_guidance.items():
-            language = lang
-            add(f"**Language guidance ({lang}):**")
+    # Language guidance: render only the guidance matching the plan's language.
+    # The resolver passes the full language_guidance map through without
+    # filtering, so the picker here must be explicit — iterating dict.items()
+    # and breaking would pick whichever key happens to come first (almost
+    # always "java"), regardless of the actual codebase language.
+    guidance_map = getattr(st, "language_guidance", None) or {}
+    if language and language in guidance_map:
+        g = guidance_map[language]
+        add(f"**Language guidance ({language}):**")
+        add("")
+        if g.library:
+            add(f"- _Library/API:_ {g.library}")
+        if g.notes:
+            add(f"- _Notes:_ {g.notes}")
+        if g.example:
             add("")
-            if g.library:
-                add(f"- _Library/API:_ {g.library}")
-            if g.notes:
-                add(f"- _Notes:_ {g.notes}")
-            if g.example:
-                add("")
-                add("```")
-                add(g.example.rstrip())
-                add("```")
-            add("")
-            break  # one language entry is enough; the rest are mapped elsewhere
+            add("```")
+            add(g.example.rstrip())
+            add("```")
+        add("")
 
     # Verification block — render checklist only. grep_pattern and notes are
     # suppressed: the pattern is scanner-tool noise, and the notes are

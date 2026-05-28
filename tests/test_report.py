@@ -59,6 +59,37 @@ def test_language_inference_from_path():
     assert "PreparedStatement" in md
 
 
+def test_csharp_language_guidance_for_dotnet_codebase():
+    """`.cs` and `.cshtml` paths must route to csharp guidance — not java.
+
+    Regression: before the fix, the renderer iterated language_guidance.items()
+    and broke on the first key, which is consistently "java" in the taxonomy.
+    A C# codebase would silently get Java code examples.
+    """
+    findings = ingest(FIXTURES / "sarif-dotnet-sample.json", format="sarif")
+    report = build_report(findings)
+
+    sqli = next(g for g in report.groups if g.cwe_id == "CWE-89")
+    xss = next(g for g in report.groups if g.cwe_id == "CWE-79")
+    assert sqli.language == "csharp", "UserRepository.cs should infer csharp"
+    assert xss.language == "csharp",  "Profile.cshtml should infer csharp"
+
+    md = report.to_markdown()
+    # C# guidance markers from CFT021.01 (Prepared Statements) and CFT018.01
+    # (HTML Entity Encoding) should appear.
+    assert "**Language guidance (csharp):**" in md
+    assert "SqlCommand" in md or "Dapper" in md       # CFT021.01 csharp library
+    assert "WebUtility.HtmlEncode" in md or "Razor" in md  # CFT018.01 csharp guidance
+    # Java guidance must NOT leak through for a C# codebase.
+    # Canaries are markers that exist ONLY inside Java guidance blocks —
+    # not in CFT021.01's prose description (which mentions PreparedStatement)
+    # or CFT018.01's checklist text (which mentions OWASP Java Encoder as
+    # one of several recommended vetted libraries).
+    assert "**Language guidance (java):**" not in md
+    assert "JDBC PreparedStatement (built-in)" not in md  # CFT021.01 java library
+    assert "org.owasp.encoder.Encode" not in md            # CFT018.01 java example
+
+
 def test_effort_cap_drops_high_options():
     findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
     report = build_report(findings, effort_cap="Low")

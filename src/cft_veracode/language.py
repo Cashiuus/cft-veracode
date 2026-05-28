@@ -21,6 +21,13 @@ EXT_MAP: dict[str, str] = {
     ".go": "go",
     ".cs": "csharp",
     ".vb": "csharp",            # Veracode tags VB.NET; map to csharp for guidance proximity
+    ".cshtml": "csharp",        # Razor views (ASP.NET MVC / Core)
+    ".razor": "csharp",         # Blazor components
+    ".aspx": "csharp",          # ASP.NET Web Forms pages
+    ".ascx": "csharp",          # ASP.NET user controls
+    ".ashx": "csharp",          # ASP.NET HTTP handlers
+    ".asax": "csharp",          # global.asax application file
+    ".asmx": "csharp",          # ASP.NET legacy web services
     ".cpp": "cpp",
     ".cc": "cpp",
     ".cxx": "cpp",
