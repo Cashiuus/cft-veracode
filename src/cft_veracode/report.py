@@ -151,25 +151,24 @@ def render_markdown(report: Report) -> str:
 def _render_group_markdown(add, idx: int, g: FindingGroup) -> None:
     cwe = g.cwe_id or "(no CWE)"
     issue_type = _group_issue_type(g)
-    header = f"### Group {idx}: {cwe} — {issue_type} — {g.count} finding(s) in `{g.file_root}`"
-    add(header)
-    add("")
-    summary = [
-        f"**Max severity:** {g.max_severity}",
-        f"**Language:** `{g.language or 'unknown'}`",
-    ]
-    add("  \n".join(summary))
+
+    # Clean header: just CWE + what it is. Count, severity, language, and
+    # location all live in the metadata strip below — keeps the header
+    # readable when file_root is long or there are many findings.
+    add(f"### Group {idx}: {cwe} — {issue_type}")
     add("")
 
-    if g.plan is None:
-        add(f"> _No CFT plan available for {cwe}._ The taxonomy may not yet cover this CWE. "
-            "Consider opening a request to add it.")
-        add("")
-    else:
-        _render_plan_markdown(add, g.plan)
-
-    add("**Affected findings:**")
+    # Metadata strip — single scan-line of key facts.
+    add(
+        f"**Findings:** {g.count}  |  "
+        f"**Max severity:** {g.max_severity}  |  "
+        f"**Language:** `{g.language or 'unknown'}`  "
+    )
+    add(f"**Location:** `{g.file_root}`")
     add("")
+
+    # Affected findings — surfaced BEFORE the fix so the reader knows what
+    # they're looking at (which files, which lines) before reading guidance.
     add("| Severity | File | Line | Issue ID | Title | Details |")
     add("|---|---|---|---|---|---|")
     for f in sorted(g.findings, key=lambda x: (-SEVERITY_RANK.get(x.severity, -1), x.location.file_path or "")):
@@ -179,6 +178,16 @@ def _render_group_markdown(add, idx: int, g: FindingGroup) -> None:
         details = f"[view]({f.flaw_details_url})" if f.flaw_details_url else "—"
         add(f"| {f.severity} | `{file}` | {line} | `{fid}` | {f.title} | {details} |")
     add("")
+
+    # Recommended remediation last — the "what to do about it" comes after
+    # the "what is it" so devs scan the findings table first.
+    if g.plan is None:
+        add(f"> _No CFT plan available for {cwe}._ The taxonomy may not yet cover this CWE. "
+            "Consider opening a request to add it.")
+        add("")
+    else:
+        _render_plan_markdown(add, g.plan)
+
     add("---")
     add("")
 

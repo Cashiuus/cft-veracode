@@ -144,6 +144,46 @@ def test_findings_table_includes_details_column():
     assert "[view](https://web.analysiscenter.veracode.com" in md
 
 
+def test_group_section_order_findings_before_remediation():
+    """Within a group, the affected-findings table must come BEFORE the
+    recommended fix block. Devs read 'what is it / where is it' first,
+    then 'how do I fix it'.
+
+    Also asserts the metadata strip carries the count + severity + language
+    + location facts (previously partly stuffed into the header).
+    """
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    report = build_report(findings)
+    md = report.to_markdown()
+
+    # The CWE-89 (SQLi) group should appear once.
+    grp_idx = md.find("### Group")
+    assert grp_idx != -1
+    # Find first SQLi group header.
+    sqli_idx = next(
+        md.find(line) for line in md.splitlines()
+        if line.startswith("### Group") and "CWE-89" in line
+    )
+
+    # Within the SQLi group, the findings table header must precede the
+    # plan's primary-fix label.
+    table_idx = md.index("| Severity | File | Line | Issue ID | Title | Details |", sqli_idx)
+    plan_idx  = md.index("**Primary fix (Sufficient", sqli_idx)
+    assert sqli_idx < table_idx < plan_idx, (
+        f"Expected order: group header ({sqli_idx}) -> findings table "
+        f"({table_idx}) -> remediation ({plan_idx})"
+    )
+
+    # Metadata strip carries the count, severity, language, and location.
+    assert "**Findings:** 2" in md       # CWE-89 group has 2 findings in the fixture
+    assert "**Max severity:**" in md
+    assert "**Language:** `java`" in md
+    assert "**Location:** `" in md
+
+    # The old "X finding(s) in `path`" suffix should be gone from the header.
+    assert "finding(s) in" not in md
+
+
 def test_report_omits_regex_patterns_and_verification_notes():
     """Per UX direction: keep checklist + common mistakes; drop the regex
     patterns and the verification-notes commentary that explains them.
