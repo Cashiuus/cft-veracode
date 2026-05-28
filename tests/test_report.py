@@ -212,6 +212,106 @@ def test_report_omits_regex_patterns_and_verification_notes():
     assert "No SQL text is constructed by string concatenation" in md
 
 
+def test_html_output_basic_shape():
+    """The HTML renderer should produce a single, standalone HTML document
+    with the dark theme embedded and the report content present."""
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    report = build_report(findings)
+    out = report.to_html()
+
+    # Single-file standalone HTML
+    assert out.startswith("<!DOCTYPE html>")
+    assert "<html" in out
+    assert "</html>" in out
+    # Embedded CSS, no external stylesheets
+    assert "<style>" in out
+    assert "<link" not in out  # no external CSS
+    assert "<script" not in out  # no external JS either
+
+    # Dark theme CSS variables present
+    assert "--bg:" in out
+    assert "color-scheme" in out and "dark" in out
+
+    # Severity color classes are emitted for at least one severity
+    # (the SQLi fixture has Medium-severity findings)
+    assert "sev-medium" in out
+    # And the CSS defines all six severity tiers
+    for cls in ("sev-veryhigh", "sev-high", "sev-medium", "sev-low", "sev-verylow", "sev-info"):
+        assert f".pill.{cls}" in out, f"missing severity CSS for {cls}"
+
+    # Report content
+    assert "DemoApp" in out                  # app name from fixture scan context
+    assert "CWE-89" in out
+    assert "SQL Injection" in out
+    assert "CFT021.01" in out                # primary fix surfaced
+    assert "Summary" in out
+    assert "Fix groups" in out
+
+
+def test_html_severity_pill_for_finding_row():
+    """Each finding row in the table should carry a severity pill
+    (colored badge), not a plain text cell."""
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    report = build_report(findings)
+    out = report.to_html()
+    # The SQLi findings in the fixture are Medium severity. The pill markup
+    # is <span class="pill sev-medium">...</span> — assert at least one
+    # appears inside a <td class="severity">.
+    assert 'class="severity"' in out
+    assert 'class="pill sev-medium"' in out
+
+
+def test_html_escapes_user_supplied_content():
+    """Finding titles, file paths, etc. must be HTML-escaped — a finding
+    title with a < or & shouldn't break the document."""
+    from cft_veracode.types import Finding, Location, ScanContext
+
+    ctx = ScanContext(scanner="test", app_name="EscapeTest")
+    hostile = Finding(
+        finding_id="x1",
+        cwe_id="CWE-79",
+        severity="High",
+        title='<script>alert("xss")</script> & stuff',
+        location=Location(file_path="src/<weird>.java", line=10),
+        scanner="test",
+        scan_context=ctx,
+    )
+    report = build_report([hostile])
+    out = report.to_html()
+
+    # Raw script tag must NOT appear unescaped
+    assert "<script>alert" not in out
+    # The escaped version must appear
+    assert "&lt;script&gt;alert" in out
+    # File path angle brackets escaped
+    assert "src/&lt;weird&gt;.java" in out
+
+
+def test_html_is_the_default_via_report_helper():
+    """to_html() works and is the canonical default — but to_markdown()
+    and to_json() must still be available for opt-in."""
+    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
+    report = build_report(findings)
+    # All three formats coexist
+    assert report.to_html().startswith("<!DOCTYPE html>")
+    assert report.to_markdown().startswith("# Veracode remediation report")
+    assert report.to_json().startswith("{")
+
+
+def test_html_renders_language_guidance_for_csharp():
+    """The .NET-codebase fixture should produce csharp language guidance
+    in the HTML (same fix as the markdown-side language-picker bug)."""
+    findings = ingest(FIXTURES / "sarif-dotnet-sample.json", format="sarif")
+    report = build_report(findings)
+    out = report.to_html()
+
+    assert "Language guidance (csharp)" in out
+    assert "SqlCommand" in out
+    # Java guidance must not leak through
+    assert "Language guidance (java)" not in out
+    assert "JDBC PreparedStatement (built-in)" not in out
+
+
 def test_json_includes_issue_type_and_flaw_link():
     findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
     report = build_report(findings)

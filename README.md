@@ -16,7 +16,7 @@ The bridge:
 3. Infers the affected language from the file path
 4. Deduplicates findings into fix groups
 5. Calls `cft-resolver` to produce a `Plan` for each group
-6. Emits a structured Markdown remediation report
+6. Emits a structured remediation report — **HTML (default)**, Markdown, or JSON
 
 The bridge **never invents fixes** — it sources every recommendation from the CFT taxonomy. Same source of truth, scanner-specific delivery.
 
@@ -53,17 +53,20 @@ Two subcommands: `fetch` (live API call) and `ingest` (file-based).
 ### `fetch` — pull findings live from the Veracode REST API
 
 ```
-# Fetch the latest STATIC policy-scan findings for an app and produce a report
-cft-veracode fetch --app DemoApp --output report.md
+# Fetch the latest STATIC policy-scan findings for an app and produce an HTML report
+cft-veracode fetch --app DemoApp --output report.html
 
 # Fetch from a specific sandbox instead of the policy scan
-cft-veracode fetch --app DemoApp --sandbox DevSandbox --output report.md
+cft-veracode fetch --app DemoApp --sandbox DevSandbox --output report.html
 
 # Identify the app by GUID instead of name
-cft-veracode fetch --app 11111111-2222-3333-4444-555555555555 --output report.md
+cft-veracode fetch --app 11111111-2222-3333-4444-555555555555 --output report.html
 
 # Override language, cap effort, filter severity
 cft-veracode fetch --app DemoApp --language java --effort-cap Medium --min-severity High
+
+# Get the older Markdown format instead
+cft-veracode fetch --app DemoApp --output-format markdown --output report.md
 ```
 
 **Credentials** are discovered automatically in this order:
@@ -78,14 +81,17 @@ Pagination is handled internally — large apps with hundreds of findings are fe
 ### `ingest` — file-based (when you already have an export)
 
 ```
-# Pipeline Scan JSON (from `veracode-pipeline-scan` CLI output)
-cft-veracode ingest scan.json --format pipeline --output report.md
+# Pipeline Scan JSON (default output is HTML)
+cft-veracode ingest scan.json --format pipeline --output report.html
 
 # Findings v2 API JSON (already exported)
-cft-veracode ingest findings.json --format api --output report.md
+cft-veracode ingest findings.json --format api --output report.html
 
 # SARIF (from Veracode SAST export, or any SARIF-emitting scanner)
-cft-veracode ingest scan.sarif --format sarif --output report.md
+cft-veracode ingest scan.sarif --format sarif --output report.html
+
+# Markdown output (e.g. for PR comments or terminal preview)
+cft-veracode ingest scan.json --format pipeline --output-format markdown --output report.md
 
 # JSON output for downstream tooling
 cft-veracode ingest scan.json --format pipeline --output-format json
@@ -105,25 +111,41 @@ from cft_veracode.ingest import parse_pipeline_scan, parse_findings_api, parse_s
 # Build a structured remediation report (groups findings + resolves CFT plans)
 report = build_report(findings, language=None, effort_cap=None, skip_mitigated=True)
 
-# Render to markdown
+# Render to HTML (default — single-file, dark theme, offline-viewable)
+pathlib.Path("report.html").write_text(report.to_html(), encoding="utf-8")
+
+# Or Markdown (for PR comments, terminal preview)
 print(report.to_markdown())
-# or JSON
+
+# Or JSON (for downstream tooling)
 print(report.to_json())
 ```
 
-## What's in the Markdown report
+## Output formats
 
-Per scan, grouped by (severity → fix family → CWE):
+### HTML (default)
 
-- Executive summary: counts by severity, top fix families
-- Per-group section:
-  - The CFT primary fix (with language-specific code snippet when language is known)
-  - Verification checklist (so reviewers know what "done" looks like)
-  - Common mistakes / anti-patterns to watch for
-  - Effort estimate
-  - List of affected findings (file:line, severity, Veracode issue_id)
-  - Defense-in-depth additions (optional)
-- References section (OWASP, NIST, RFC, CERT)
+A single-file, standalone HTML document — no external CSS, no JavaScript, no font fetches. Viewable offline, email-able, drop-able in Slack or onto a static site. Dark theme by default; severity-colored pills (red / orange / yellow / blue / grey) flag risk at a glance. Each fix group is a collapsible card with the affected-findings table on top and the CFT remediation block below.
+
+### Markdown
+
+The original output — best for PR comments, terminal preview, or any pipeline that already consumes Markdown. Same content structure as HTML, just monospace-friendly.
+
+### JSON
+
+Machine-readable structured output — for piping into downstream automation (ticketing, SOAR, dashboards). Preserves every field the report depends on: scan context, groupings, per-finding metadata, full CFT plan partitioned by mapping strength.
+
+### What's in every report
+
+Per scan, grouped by (CWE × file-root directory):
+
+- Executive summary: counts by severity, fix groups, skipped-finding accounting
+- Per-group section (in this order):
+  - Group header — CWE + finding title
+  - Metadata strip — count, max severity, language, location
+  - **Affected findings table first** — severity, file, line, Veracode issue ID, deep link
+  - **Recommended remediation second** — plan notes, primary fix (or necessary controls), defense-in-depth, partial fixes
+  - For each CFT entry — effort / control / actor pills, description, language-specific code example, verification checklist, common mistakes, references (OWASP, NIST, RFC, CERT)
 
 ## Versioning
 

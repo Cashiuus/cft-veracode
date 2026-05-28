@@ -119,6 +119,10 @@ class Report:
                 out[f.severity] = out.get(f.severity, 0) + 1
         return out
 
+    def to_html(self) -> str:
+        from cft_veracode.report import render_html
+        return render_html(self)
+
     def to_markdown(self) -> str:
         from cft_veracode.report import render_markdown
         return render_markdown(self)

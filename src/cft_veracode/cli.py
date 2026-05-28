@@ -55,8 +55,8 @@ def main(argv: "list[str] | None" = None) -> int:
 def _add_common_filters(p: argparse.ArgumentParser) -> None:
     p.add_argument("--output", "-o", default=None,
                    help="Output file (default: stdout)")
-    p.add_argument("--output-format", default="markdown", choices=["markdown", "json"],
-                   help="Report format (default: markdown)")
+    p.add_argument("--output-format", default="html", choices=["html", "markdown", "json"],
+                   help="Report format (default: html)")
     p.add_argument("--language", "-l", default=None,
                    help="Override inferred language (java, python, javascript, go, csharp, ...)")
     p.add_argument("--effort-cap", "-e", default=None, choices=["Low", "Medium", "High"],
@@ -125,7 +125,12 @@ def _emit(args, findings) -> int:
         min_severity=args.min_severity,
     )
 
-    out = report.to_markdown() if args.output_format == "markdown" else report.to_json()
+    if args.output_format == "html":
+        out = report.to_html()
+    elif args.output_format == "markdown":
+        out = report.to_markdown()
+    else:
+        out = report.to_json()
 
     if args.output:
         Path(args.output).write_text(out, encoding="utf-8")
