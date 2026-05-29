@@ -1,0 +1,170 @@
+name: Test composite Action
+
+# Smoke-tests the cft-veracode Action against the bundled fixture so that
+# regressions in either the Action wrapper (action.yml / entry.py) or the
+# underlying cft-veracode package surface here before they reach callers.
+#
+# Runs on every push/PR that touches relevant code, plus manual dispatch.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/actions/cft-veracode/**'
+      - '.github/workflows/test-action.yml'
+      - 'src/cft_veracode/**'
+      - 'tests/fixtures/**'
+      - 'pyproject.toml'
+  pull_request:
+    paths:
+      - '.github/actions/cft-veracode/**'
+      - '.github/workflows/test-action.yml'
+      - 'src/cft_veracode/**'
+      - 'tests/fixtures/**'
+      - 'pyproject.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ----------------------------------------------------------------------
+  # Smoke: default settings (markdown output, fail-on off).
+  # ----------------------------------------------------------------------
+  smoke-markdown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install cft-veracode from local source
+        # Install in-tree so the Action's `pip install "cft-veracode~=0.1"`
+        # step finds the requirement already satisfied and reuses this build
+        # — that's how we test in-development changes before they're on PyPI.
+        run: pip install -e .
+
+      - name: Run Action against bundled fixture
+        id: cft
+        uses: ./.github/actions/cft-veracode
+        with:
+          scan-json: tests/fixtures/pipeline-sample.json
+          # comment-on-pr defaults to true; on PR events this will post a
+          # comment that updates in place on each retry — useful for visually
+          # verifying the comment shape during development.
+
+      - name: Assert outputs
+        # Stats from the bundled fixture are stable; if they drift, either
+        # the fixture or the report logic changed and the test should fail
+        # so we notice.
+        run: |
+          set -euo pipefail
+          test "${{ steps.cft.outputs.total-findings }}" = "3"
+          test "${{ steps.cft.outputs.groups }}" = "2"
+          test "${{ steps.cft.outputs.max-severity }}" = "High"
+          test -s "${{ steps.cft.outputs.report-path }}"
+          test "${{ steps.cft.outputs.markdown-path }}" = "${{ steps.cft.outputs.report-path }}"
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cft-report-markdown
+          path: ${{ steps.cft.outputs.report-path }}
+
+  # ----------------------------------------------------------------------
+  # Smoke: html output produces HTML at output-path + markdown sidecar.
+  # ----------------------------------------------------------------------
+  smoke-html:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -e .
+
+      - name: Run Action requesting HTML output
+        id: cft
+        uses: ./.github/actions/cft-veracode
+        with:
+          scan-json: tests/fixtures/pipeline-sample.json
+          output-format: html
+          output-path: cft-report.html
+          comment-on-pr: 'false'   # don't post a separate PR comment from this matrix
+
+      - name: Assert HTML and markdown sidecar exist
+        # output-path is the HTML file the caller will upload as an artifact;
+        # the sidecar markdown-path is what the PR comment would have used.
+        run: |
+          set -euo pipefail
+          test "${{ steps.cft.outputs.report-path }}" = "cft-report.html"
+          test "${{ steps.cft.outputs.markdown-path }}" = "cft-report.md"
+          test -s cft-report.html
+          test -s cft-report.md
+          head -1 cft-report.html | grep -q '<!doctype html>'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cft-report-html
+          path: cft-report.html
+
+  # ----------------------------------------------------------------------
+  # fail-on gating: with fail-on=High and a fixture that has High findings,
+  # the Action MUST exit non-zero. Wrapped in continue-on-error so the
+  # workflow stays green when the gate fires correctly.
+  # ----------------------------------------------------------------------
+  fail-on-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -e .
+
+      - name: Run Action with fail-on=High (expected to fail the step)
+        id: cft
+        continue-on-error: true
+        uses: ./.github/actions/cft-veracode
+        with:
+          scan-json: tests/fixtures/pipeline-sample.json
+          fail-on: High
+          comment-on-pr: 'false'
+
+      - name: Assert the gate fired
+        # The Action step should report failure; outputs still get populated.
+        run: |
+          set -euo pipefail
+          test "${{ steps.cft.outcome }}" = "failure"
+          test "${{ steps.cft.outputs.max-severity }}" = "High"
+
+  # ----------------------------------------------------------------------
+  # fail-on gating with a high threshold that the fixture does NOT meet:
+  # confirms the gate does not over-trigger.
+  # ----------------------------------------------------------------------
+  fail-on-passes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -e .
+
+      - name: Run Action with fail-on=VeryHigh (fixture has no VeryHigh)
+        id: cft
+        uses: ./.github/actions/cft-veracode
+        with:
+          scan-json: tests/fixtures/pipeline-sample.json
+          fail-on: VeryHigh
+          comment-on-pr: 'false'
+
+      - name: Assert no gate fire
+        run: |
+          set -euo pipefail
+          test "${{ steps.cft.outcome }}" = "success"
+          test "${{ steps.cft.outputs.max-severity }}" = "High"

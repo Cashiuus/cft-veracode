@@ -1,0 +1,105 @@
+name: 'CFT Remediation Plan (Veracode)'
+description: 'Turn Veracode Pipeline Scan output into a CFT remediation plan; post to PRs and the job summary.'
+author: 'Cashiuus'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  scan-json:
+    description: 'Path to the Veracode Pipeline Scan results JSON file.'
+    required: true
+  language:
+    description: 'Override language inference (e.g. java, python, javascript, go, csharp). Default: auto-infer per finding.'
+    required: false
+    default: ''
+  effort-cap:
+    description: 'Cap fix-technique effort level. One of: Low, Medium, High. Default: no cap.'
+    required: false
+    default: ''
+  min-severity:
+    description: 'Skip findings below this severity. One of: VeryLow, Low, Medium, High, VeryHigh.'
+    required: false
+    default: 'Low'
+  output-format:
+    description: 'Report format written to disk for artifact upload. One of: markdown, html, json. PR comments are always markdown.'
+    required: false
+    default: 'markdown'
+  output-path:
+    description: 'Path to write the report file. Defaults to cft-report.<ext> in the workspace.'
+    required: false
+    default: ''
+  job-summary:
+    description: 'Append the markdown report to the Actions job summary.'
+    required: false
+    default: 'true'
+  comment-on-pr:
+    description: 'Post the report as a sticky PR comment (markdown). Ignored on non-PR events.'
+    required: false
+    default: 'true'
+  comment-tag:
+    description: 'Disambiguator when running this Action multiple times on one PR. Set unique values per invocation to avoid stomping.'
+    required: false
+    default: 'default'
+  fail-on:
+    description: 'Severity threshold that causes the job to exit non-zero. One of: VeryLow, Low, Medium, High, VeryHigh. Off by default.'
+    required: false
+    default: ''
+  python-version:
+    description: 'Python version used to install and run cft-veracode.'
+    required: false
+    default: '3.11'
+  cft-veracode-version:
+    description: 'pip version specifier for cft-veracode (e.g. ~=0.1, ==0.1.3).'
+    required: false
+    default: '~=0.1'
+
+outputs:
+  total-findings:
+    description: 'Number of findings after min-severity filtering.'
+    value: ${{ steps.generate.outputs.total-findings }}
+  groups:
+    description: 'Number of fix groups in the report.'
+    value: ${{ steps.generate.outputs.groups }}
+  max-severity:
+    description: 'Highest severity present (or empty string if no findings).'
+    value: ${{ steps.generate.outputs.max-severity }}
+  report-path:
+    description: 'Path to the written report file (in the requested output-format).'
+    value: ${{ steps.generate.outputs.report-path }}
+  markdown-path:
+    description: 'Path to the markdown copy of the report (always written for the PR comment).'
+    value: ${{ steps.generate.outputs.markdown-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install cft-veracode
+      shell: bash
+      run: pip install "cft-veracode${{ inputs.cft-veracode-version }}"
+
+    - name: Generate CFT remediation plan
+      id: generate
+      shell: bash
+      env:
+        INPUT_SCAN_JSON: ${{ inputs.scan-json }}
+        INPUT_LANGUAGE: ${{ inputs.language }}
+        INPUT_EFFORT_CAP: ${{ inputs.effort-cap }}
+        INPUT_MIN_SEVERITY: ${{ inputs.min-severity }}
+        INPUT_OUTPUT_FORMAT: ${{ inputs.output-format }}
+        INPUT_OUTPUT_PATH: ${{ inputs.output-path }}
+        INPUT_JOB_SUMMARY: ${{ inputs.job-summary }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+      run: python "${{ github.action_path }}/entry.py"
+
+    - name: Post sticky PR comment
+      if: ${{ inputs.comment-on-pr == 'true' && github.event_name == 'pull_request' && steps.generate.outputs.markdown-path != '' }}
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        header: cft-veracode-${{ inputs.comment-tag }}
+        path: ${{ steps.generate.outputs.markdown-path }}
