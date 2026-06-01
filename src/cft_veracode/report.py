@@ -570,15 +570,21 @@ pre code { background: transparent; padding: 0; }
   flex-wrap: wrap;
   min-width: 0;
 }
-.group-num { color: var(--text-dim); font-size: 13px; flex-shrink: 0; }
+.group-num {
+  color: var(--text-dim);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
 .group-cwe {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--accent);
   font-family: ui-monospace, Consolas, monospace;
   flex-shrink: 0;
 }
-.group-title { color: var(--text); font-weight: 500; }
+.group-title { color: var(--text); font-weight: 500; font-size: 16px; }
 
 .group-body { padding: 22px 24px 26px; }
 
@@ -589,10 +595,16 @@ pre code { background: transparent; padding: 0; }
   gap: 8px;
   margin-bottom: 18px;
 }
+.group-summary-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 .group-location {
   color: var(--text-muted);
   font-size: 13px;
-  margin-bottom: 18px;
 }
 .group-location .path { color: var(--text); }
 
@@ -880,10 +892,6 @@ def _render_html_group(idx: int, g: FindingGroup) -> str:
         file_path = _esc(f.location.file_path or "?")
         line = _esc(f.location.line) if f.location.line else "—"
         fid = _esc(f.veracode_flaw_id or f.finding_id)
-        details_cell = (
-            f'<a href="{_esc(f.flaw_details_url)}" target="_blank" rel="noopener">view</a>'
-            if f.flaw_details_url else "—"
-        )
         rows.append(
             "<tr>"
             f'<td class="severity">{_sev_pill(f.severity)}</td>'
@@ -891,14 +899,13 @@ def _render_html_group(idx: int, g: FindingGroup) -> str:
             f'<td>{line}</td>'
             f'<td><code>{fid}</code></td>'
             f'<td>{_esc(f.title)}</td>'
-            f'<td>{details_cell}</td>'
             "</tr>"
         )
 
     findings_table = (
         '<table>\n'
         '<thead><tr><th>Severity</th><th>File</th><th>Line</th>'
-        '<th>Issue ID</th><th>Title</th><th>Details</th></tr></thead>\n'
+        '<th>Issue ID</th><th>Title</th></tr></thead>\n'
         f'<tbody>{"".join(rows)}</tbody>\n'
         '</table>\n'
     )
@@ -909,18 +916,20 @@ def _render_html_group(idx: int, g: FindingGroup) -> str:
     )
 
     return (
-        f'<details class="group" open id="group-{idx}">\n'
+        f'<details class="group" id="group-{idx}">\n'
         '<summary>\n'
+        '<div class="group-summary-content">\n'
         '<div class="group-header">\n'
-        f'<span class="group-num">Group {idx}</span>\n'
+        f'<span class="group-num">Group {idx}:</span>\n'
         f'<span class="group-cwe">{_esc(cwe)}</span>\n'
         f'<span class="group-title">{_esc(issue_type)}</span>\n'
+        '</div>\n'
+        f'{location_html}'
         '</div>\n'
         f'{_sev_pill(g.max_severity)}\n'
         '</summary>\n'
         '<div class="group-body">\n'
         f'<div class="group-meta">{meta_pills}</div>\n'
-        f'{location_html}'
         f'{findings_table}'
         f'{plan_html}'
         '</div>\n'

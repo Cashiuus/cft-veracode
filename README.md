@@ -54,19 +54,25 @@ Two subcommands: `fetch` (live API call) and `ingest` (file-based).
 
 ```
 # Fetch the latest STATIC policy-scan findings for an app and produce an HTML report
-cft-veracode fetch --app DemoApp --output report.html
+# (writes ./CFT-Report-DemoApp.html by default)
+cft-veracode fetch --app DemoApp
 
 # Fetch from a specific sandbox instead of the policy scan
-cft-veracode fetch --app DemoApp --sandbox DevSandbox --output report.html
+# (writes ./CFT-Report-DemoApp-DevSandbox.html)
+cft-veracode fetch --app DemoApp --sandbox DevSandbox
 
 # Identify the app by GUID instead of name
-cft-veracode fetch --app 11111111-2222-3333-4444-555555555555 --output report.html
+cft-veracode fetch --app 11111111-2222-3333-4444-555555555555
 
 # Override language, cap effort, filter severity
 cft-veracode fetch --app DemoApp --language java --effort-cap Medium --min-severity High
 
-# Get the older Markdown format instead
-cft-veracode fetch --app DemoApp --output-format markdown --output report.md
+# Get the older Markdown format instead (writes ./CFT-Report-DemoApp.md)
+cft-veracode fetch --app DemoApp --output-format markdown
+
+# Write to a specific file, or stream to stdout with '-'
+cft-veracode fetch --app DemoApp --output my-report.html
+cft-veracode fetch --app DemoApp --output -
 ```
 
 **Credentials** are discovered automatically in this order:
@@ -81,20 +87,23 @@ Pagination is handled internally — large apps with hundreds of findings are fe
 ### `ingest` — file-based (when you already have an export)
 
 ```
-# Pipeline Scan JSON (default output is HTML)
-cft-veracode ingest scan.json --format pipeline --output report.html
+# Pipeline Scan JSON — writes ./CFT-Report-scan.html by default
+cft-veracode ingest scan.json --format pipeline
 
-# Findings v2 API JSON (already exported)
-cft-veracode ingest findings.json --format api --output report.html
+# Findings v2 API JSON (already exported) — writes ./CFT-Report-findings.html
+cft-veracode ingest findings.json --format api
 
 # SARIF (from Veracode SAST export, or any SARIF-emitting scanner)
-cft-veracode ingest scan.sarif --format sarif --output report.html
+cft-veracode ingest scan.sarif --format sarif
 
-# Markdown output (e.g. for PR comments or terminal preview)
-cft-veracode ingest scan.json --format pipeline --output-format markdown --output report.md
+# Markdown output (writes ./CFT-Report-scan.md)
+cft-veracode ingest scan.json --format pipeline --output-format markdown
 
-# JSON output for downstream tooling
-cft-veracode ingest scan.json --format pipeline --output-format json
+# JSON output streamed to stdout (e.g. piped into downstream tooling)
+cft-veracode ingest scan.json --format pipeline --output-format json --output -
+
+# Explicit output path
+cft-veracode ingest scan.json --format pipeline --output my-report.html
 ```
 
 ## Library usage

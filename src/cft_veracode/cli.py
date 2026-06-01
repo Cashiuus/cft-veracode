@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
 from cft_veracode import __version__
 from cft_veracode.ingest import ingest, parse_findings_api
 from cft_veracode.report import build_report
+
+_EXT_FOR_FORMAT = {"html": "html", "markdown": "md", "json": "json"}
 
 
 def main(argv: "list[str] | None" = None) -> int:
@@ -54,7 +57,8 @@ def main(argv: "list[str] | None" = None) -> int:
 
 def _add_common_filters(p: argparse.ArgumentParser) -> None:
     p.add_argument("--output", "-o", default=None,
-                   help="Output file (default: stdout)")
+                   help="Output file. Default: CFT-Report-<source-or-app>.<ext> in cwd. "
+                        "Use '-' to write to stdout.")
     p.add_argument("--output-format", default="html", choices=["html", "markdown", "json"],
                    help="Report format (default: html)")
     p.add_argument("--language", "-l", default=None,
@@ -132,12 +136,30 @@ def _emit(args, findings) -> int:
     else:
         out = report.to_json()
 
-    if args.output:
-        Path(args.output).write_text(out, encoding="utf-8")
-        print(f"wrote {args.output}", file=sys.stderr)
-    else:
+    if args.output == "-":
         print(out)
+        return 0
+
+    target = args.output or _default_output_path(args)
+    Path(target).write_text(out, encoding="utf-8")
+    print(f"wrote {target}", file=sys.stderr)
     return 0
+
+
+def _default_output_path(args) -> str:
+    ext = _EXT_FOR_FORMAT.get(args.output_format, args.output_format)
+    if args.cmd == "ingest":
+        label = Path(args.source).stem
+    else:
+        label = args.app
+        if getattr(args, "sandbox", None):
+            label = f"{label}-{args.sandbox}"
+    return f"CFT-Report-{_slugify(label)}.{ext}"
+
+
+def _slugify(value: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-")
+    return cleaned or "report"
 
 
 if __name__ == "__main__":
