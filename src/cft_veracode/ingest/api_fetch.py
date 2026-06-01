@@ -99,7 +99,12 @@ def resolve_app_guid(
         return app_identifier
 
     sess = session or _make_session(api_id, api_key)
-    r = sess.get(APPS_URL, params={"name": app_identifier, "size": 25})
+    # Pre-encode and build the URL manually: requests' default params encoder
+    # uses quote_plus (spaces -> "+"), but Veracode's name filter expects strict
+    # RFC 3986 percent-encoding. Passing a pre-encoded value through params=
+    # would double-encode, so we splice it into the URL ourselves.
+    encoded_name = urllib.parse.quote(app_identifier, safe="")
+    r = sess.get(f"{APPS_URL}?name={encoded_name}&size=25")
     _raise_for_status(r, "applications lookup")
     embedded = (r.json().get("_embedded") or {}).get("applications") or []
     # Veracode's name filter is a substring match; pick exact name when present

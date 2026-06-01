@@ -72,7 +72,15 @@ def parse_findings_api(doc: dict) -> list[Finding]:
         title = (cwe_block.get("name") if isinstance(cwe_block, dict) else None) or details.get("category") or "(unknown finding)"
 
         loc = Location(
-            file_path=details.get("file_path") or details.get("file_name"),
+            # Fall back to "scope" when no file path is reported — observed on
+            # some finding types (e.g. config/library issues) where Veracode
+            # populates scope but leaves file_path/file_name blank.
+            file_path=(
+                details.get("file_path")
+                or details.get("file_name")
+                or details.get("scope")
+                or raw.get("scope")
+            ),
             line=_to_int(details.get("file_line_number")),
             function_name=details.get("function_name"),
         )
