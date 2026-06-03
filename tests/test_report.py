@@ -133,16 +133,21 @@ def test_group_header_includes_issue_type():
     assert "SQL Injection" in sqli_headers[0]
 
 
-def test_findings_table_includes_veracode_link_column():
-    """The affected-findings table should include a Veracode column with a
-    Markdown link to the flaw details page when available."""
-    findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
-    report = build_report(findings)
+def test_findings_table_column_order_and_status():
+    """The affected-findings table uses the column order
+    Severity, Status, Issue ID, Title, Line, File — and surfaces the
+    scanner finding status (e.g. OPEN) captured from the REST API."""
+    # API findings carry a finding_status.status; include mitigated so all show.
+    findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
+    report = build_report(findings, skip_mitigated=False)
     md = report.to_markdown()
-    # Header row includes the Veracode-link column
-    assert "| Severity | File | Line | Issue ID | Title | Veracode |" in md
-    # SQLi finding 1 has flaw_details_link in the fixture — should render as a Markdown link
-    assert "[Guidance](https://web.analysiscenter.veracode.com" in md
+    # New header order — no Veracode column.
+    assert "| Severity | Status | Issue ID | Title | Line | File |" in md
+    assert "| Severity | File | Line | Issue ID | Title | Veracode |" not in md
+    assert "Veracode |" not in md  # the old guidance-link column is gone
+    # Status values from the fixture appear in the table.
+    assert "OPEN" in md
+    assert "CLOSED" in md
 
 
 def test_group_section_order_findings_before_remediation():
@@ -168,7 +173,7 @@ def test_group_section_order_findings_before_remediation():
 
     # Within the SQLi group, the findings table header must precede the
     # plan's primary-fix label.
-    table_idx = md.index("| Severity | File | Line | Issue ID | Title | Veracode |", sqli_idx)
+    table_idx = md.index("| Severity | Status | Issue ID | Title | Line | File |", sqli_idx)
     plan_idx  = md.index("**Primary fix (Sufficient", sqli_idx)
     assert sqli_idx < table_idx < plan_idx, (
         f"Expected order: group header ({sqli_idx}) -> findings table "

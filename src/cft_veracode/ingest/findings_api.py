@@ -90,6 +90,7 @@ def parse_findings_api(doc: dict) -> list[Finding]:
 
         mitigation_status = _mitigation_status(raw, status)
         review = status.get("mitigation_review_status")
+        finding_state = status.get("status")  # e.g. "OPEN" / "CLOSED"
         flaw_url = _flaw_details_url(raw)
 
         out.append(Finding(
@@ -98,6 +99,7 @@ def parse_findings_api(doc: dict) -> list[Finding]:
             severity=sev,
             title=title,
             description=raw.get("description"),
+            status=finding_state,
             location=loc,
             scanner="veracode-api",
             scan_context=ctx,

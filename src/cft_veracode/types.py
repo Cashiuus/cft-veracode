@@ -57,6 +57,7 @@ class Finding:
     scanner: str                    # "veracode-pipeline" | "veracode-api" | "sarif"
     scan_context: ScanContext
     description: Optional[str] = None
+    status: Optional[str] = None               # scanner finding state, e.g. "OPEN"/"CLOSED"; None if not reported
     severity_score: Optional[float] = None     # CVSS or vendor score
     # Veracode-specific (None for SARIF or other-scanner inputs):
     veracode_flaw_id: Optional[str] = None

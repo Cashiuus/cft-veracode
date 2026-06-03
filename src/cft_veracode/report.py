@@ -170,14 +170,14 @@ def _render_group_markdown(add, idx: int, g: FindingGroup) -> None:
 
     # Affected findings — surfaced BEFORE the fix so the reader knows what
     # they're looking at (which files, which lines) before reading guidance.
-    add("| Severity | File | Line | Issue ID | Title | Veracode |")
+    add("| Severity | Status | Issue ID | Title | Line | File |")
     add("|---|---|---|---|---|---|")
     for f in sorted(g.findings, key=lambda x: (-SEVERITY_RANK.get(x.severity, -1), x.location.file_path or "")):
         file = (f.location.file_path or "?")
         line = str(f.location.line) if f.location.line else "—"
         fid = f.veracode_flaw_id or f.finding_id
-        details = f"[Guidance]({f.flaw_details_url})" if f.flaw_details_url else "—"
-        add(f"| {f.severity} | `{file}` | {line} | `{fid}` | {f.title} | {details} |")
+        status = f.status or "—"
+        add(f"| {f.severity} | {status} | `{fid}` | {f.title} | {line} | `{file}` |")
     add("")
 
     # Recommended remediation last — the "what to do about it" comes after
@@ -338,6 +338,7 @@ def _finding_to_dict(f: Finding) -> dict:
     return {
         "finding_id": f.finding_id,
         "severity": f.severity,
+        "status": f.status,
         "title": f.title,
         "file": f.location.file_path,
         "line": f.location.line,
@@ -892,20 +893,22 @@ def _render_html_group(idx: int, g: FindingGroup) -> str:
         file_path = _esc(f.location.file_path or "?")
         line = _esc(f.location.line) if f.location.line else "—"
         fid = _esc(f.veracode_flaw_id or f.finding_id)
+        status = _esc(f.status) if f.status else "—"
         rows.append(
             "<tr>"
             f'<td class="severity">{_sev_pill(f.severity)}</td>'
-            f'<td class="file"><code>{file_path}</code></td>'
-            f'<td>{line}</td>'
+            f'<td>{status}</td>'
             f'<td><code>{fid}</code></td>'
             f'<td>{_esc(f.title)}</td>'
+            f'<td>{line}</td>'
+            f'<td class="file"><code>{file_path}</code></td>'
             "</tr>"
         )
 
     findings_table = (
         '<table>\n'
-        '<thead><tr><th>Severity</th><th>File</th><th>Line</th>'
-        '<th>Issue ID</th><th>Title</th></tr></thead>\n'
+        '<thead><tr><th>Severity</th><th>Status</th><th>Issue ID</th>'
+        '<th>Title</th><th>Line</th><th>File</th></tr></thead>\n'
         f'<tbody>{"".join(rows)}</tbody>\n'
         '</table>\n'
     )

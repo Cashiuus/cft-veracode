@@ -20,6 +20,15 @@ def test_api_extracts_mitigation_status():
     assert md5_finding.is_mitigated is True
 
 
+def test_api_extracts_finding_status():
+    """finding_status.status (e.g. OPEN/CLOSED) is captured onto Finding.status."""
+    findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
+    sqli = next(f for f in findings if f.cwe_id == "CWE-89")
+    md5 = next(f for f in findings if f.cwe_id == "CWE-327")
+    assert sqli.status == "OPEN"
+    assert md5.status == "CLOSED"
+
+
 def test_api_violates_policy_flag():
     findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
     for f in findings:
