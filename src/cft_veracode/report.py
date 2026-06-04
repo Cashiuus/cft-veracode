@@ -93,7 +93,7 @@ def render_markdown(report: Report) -> str:
     add = lines.append
 
     ctx = report.scan_context
-    title_parts = ["Veracode remediation report"]
+    title_parts = ["Veracode Remediation Fix Plan"]
     if ctx.app_name:
         title_parts.append(f"— {ctx.app_name}")
     add(f"# {' '.join(title_parts)}")
@@ -470,6 +470,17 @@ pre code { background: transparent; padding: 0; }
   text-transform: uppercase;
   color: var(--text-dim);
 }
+.summary-intro {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  background: rgba(78, 161, 255, 0.10);
+  border: 1px solid rgba(78, 161, 255, 0.22);
+  border-radius: 8px;
+}
+.summary-intro strong { color: var(--text); }
 .summary-stats {
   display: flex;
   flex-wrap: wrap;
@@ -771,11 +782,9 @@ def _sev_pill(severity: str, count: Optional[int] = None) -> str:
 def render_html(report: Report) -> str:
     """Render the Report as a single-file HTML document with dark theme."""
     parts: list[str] = []
-    ctx = report.scan_context
+    # ctx = report.scan_context
 
-    title = "Veracode Remediation Report"
-    if ctx.app_name:
-        title = f"Veracode Remediation Report — {ctx.app_name}"
+    title = "Veracode Remediation Fix Plan Report"
 
     parts.append(
         '<!DOCTYPE html>\n'
@@ -805,14 +814,18 @@ def render_html(report: Report) -> str:
 def _render_html_header(report: Report, title: str) -> str:
     ctx = report.scan_context
     subtitle_parts: list[str] = []
+    if ctx.app_name:
+        subtitle_parts.append(f"App: {_esc(ctx.app_name)}")
     if ctx.scan_type:
         subtitle_parts.append(_esc(ctx.scan_type))
     if ctx.tool_name:
         tv = f" {ctx.tool_version}" if ctx.tool_version else ""
         subtitle_parts.append(_esc(f"{ctx.tool_name}{tv}"))
-    subtitle = " · ".join(subtitle_parts) if subtitle_parts else "Remediation guidance"
+    subtitle = " · ".join(subtitle_parts) if subtitle_parts else ""
 
     meta_bits: list[str] = []
+    # if ctx.app_name:
+        # meta_bits.append(f'<span><span class="meta-label">App Name:</span>{_esc(ctx.app_name)}</span>')
     if ctx.scanner:
         meta_bits.append(f'<span><span class="meta-label">Source:</span>{_esc(ctx.scanner)}</span>')
     if ctx.scan_id:
@@ -861,6 +874,10 @@ def _render_html_summary(report: Report) -> str:
     return (
         '<section class="summary">\n'
         '<h2>Summary</h2>\n'
+        '<p class="summary-intro">This report maps each Veracode finding to a concrete '
+        'remediation plan from the CFT (Common Fix Taxonomy). Findings are grouped by CWE '
+        'and location; expand any group below to see affected files and the recommended fix.'
+        '</p>\n'
         '<div class="summary-stats">\n'
         f'<div class="summary-stat"><span class="num">{report.total_findings}'
         '</span><span class="label">Findings</span></div>\n'

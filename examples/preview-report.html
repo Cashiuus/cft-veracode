@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Veracode Remediation Fix Plan Report</title>
+<style>
+:root {
+  --bg:          #0f1419;
+  --surface:     #181f28;
+  --surface-2:   #1f2731;
+  --border:      #2a3441;
+  --text:        #e4e6eb;
+  --text-muted:  #8b95a7;
+  --text-dim:    #6b7585;
+  --accent:      #4ea1ff;
+  --accent-dim:  rgba(78, 161, 255, 0.12);
+  --code-bg:     #0b0f14;
+
+  --sev-veryhigh: #ff4d6d;
+  --sev-high:     #ff8a3d;
+  --sev-medium:   #ffd23f;
+  --sev-low:      #4ea1ff;
+  --sev-verylow:  #94a3b8;
+  --sev-info:     #64748b;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, pre, .mono {
+  font-family: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas,
+               "Liberation Mono", monospace;
+  font-size: 13px;
+}
+code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; color: #cdd6e2; }
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  color: #cdd6e2;
+  margin: 12px 0;
+}
+pre code { background: transparent; padding: 0; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 32px 28px 80px; }
+
+/* Header */
+.header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+  margin-bottom: 28px;
+}
+.header h1 {
+  margin: 0 0 6px 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.header .subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.meta-strip .meta-label { color: var(--text-dim); margin-right: 4px; }
+
+/* Summary card */
+.summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 28px;
+}
+.summary h2 {
+  margin: 0 0 14px 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.summary-intro {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  background: rgba(78, 161, 255, 0.10);
+  border: 1px solid rgba(78, 161, 255, 0.22);
+  border-radius: 8px;
+}
+.summary-intro strong { color: var(--text); }
+.summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  align-items: center;
+}
+.summary-stat .num {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  display: block;
+}
+.summary-stat .label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+.summary-sev {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+.summary-skipped {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Severity pills */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.pill .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.pill.sev-veryhigh { color: var(--sev-veryhigh); border-color: rgba(255, 77, 109, 0.4); background: rgba(255, 77, 109, 0.08); }
+.pill.sev-high     { color: var(--sev-high);     border-color: rgba(255, 138, 61, 0.4); background: rgba(255, 138, 61, 0.08); }
+.pill.sev-medium   { color: var(--sev-medium);   border-color: rgba(255, 210, 63, 0.4); background: rgba(255, 210, 63, 0.08); }
+.pill.sev-low      { color: var(--sev-low);      border-color: rgba(78, 161, 255, 0.4); background: rgba(78, 161, 255, 0.08); }
+.pill.sev-verylow  { color: var(--sev-verylow);  border-color: rgba(148, 163, 184, 0.4); background: rgba(148, 163, 184, 0.08); }
+.pill.sev-info     { color: var(--sev-info);     border-color: rgba(100, 116, 139, 0.4); background: rgba(100, 116, 139, 0.08); }
+
+.pill.tag { font-weight: 400; color: var(--text-muted); }
+.pill.tag strong { color: var(--text); font-weight: 600; margin-right: 2px; }
+
+/* Group cards */
+.group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.group > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+.group > summary::-webkit-details-marker { display: none; }
+.group > summary::before {
+  content: "▾";
+  color: var(--text-dim);
+  font-size: 13px;
+  width: 12px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+.group:not([open]) > summary::before { transform: rotate(-90deg); }
+.group > summary:hover { background: var(--surface-2); }
+
+.group-header {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.group-num {
+  color: var(--text-dim);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+.group-cwe {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--accent);
+  font-family: ui-monospace, Consolas, monospace;
+  flex-shrink: 0;
+}
+.group-title { color: var(--text); font-weight: 500; font-size: 16px; }
+
+.group-body { padding: 22px 24px 26px; }
+
+/* Metadata strip for each group */
+.group-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.group-summary-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.group-location {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.group-location .path { color: var(--text); }
+
+/* Findings table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  margin-bottom: 22px;
+}
+thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(42, 52, 65, 0.5);
+  color: var(--text);
+  vertical-align: top;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-2); }
+tbody td.severity { white-space: nowrap; }
+tbody td.file { color: var(--text); }
+
+/* Plan section */
+.plan-note {
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 20px;
+  color: var(--text);
+  font-size: 14px;
+}
+.plan-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 20px 0 10px;
+}
+.plan-list { list-style: none; padding: 0; margin: 0; }
+.plan-list .secondary {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.plan-list .cft-id { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-weight: 500; }
+
+/* CFT entry card */
+.cft-entry {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.cft-entry-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.cft-entry-header .cft-id {
+  font-family: ui-monospace, Consolas, monospace;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+}
+.cft-entry-header .cft-name { font-size: 15px; font-weight: 600; color: var(--text); }
+.cft-entry-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 12px;
+}
+.cft-entry p.desc { margin: 0 0 12px; color: var(--text); }
+.cft-entry .mapping-note {
+  background: var(--accent-dim);
+  border-left: 2px solid var(--accent);
+  padding: 8px 12px;
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.lang-block-label, .vrfy-label, .cm-label, .ref-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 14px 0 6px;
+}
+.lang-library { font-size: 13.5px; margin: 0 0 4px; color: var(--text-muted); }
+.lang-library code { color: var(--text); }
+.lang-notes { font-size: 13px; color: var(--text-muted); margin: 0 0 8px; font-style: italic; }
+ul.checklist, ul.common-mistakes, ul.references {
+  margin: 4px 0 0;
+  padding-left: 22px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+ul.checklist li, ul.common-mistakes li, ul.references li { margin: 3px 0; }
+
+.empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 60px 20px;
+  font-size: 14px;
+}
+.groups-heading {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 28px 0 14px;
+}
+
+@media (max-width: 700px) {
+  .container { padding: 20px 16px 60px; }
+  .summary-stats { gap: 18px; }
+  .summary-sev { margin-left: 0; width: 100%; }
+  .group > summary, .group-body { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header class="header">
+<h1>Veracode Remediation Fix Plan Report</h1>
+<div class="subtitle">Acme Payments Service · STATIC · Veracode SAST 2026.1</div>
+<div class="meta-strip"><span><span class="meta-label">Source:</span>veracode-api</span><span><span class="meta-label">Scan ID:</span><code>abc123-def456</code></span><span><span class="meta-label">Sandbox:</span>release-2026.06</span><span><span class="meta-label">Scan date:</span>2026-06-03</span></div>
+</header>
+<section class="summary">
+<h2>Summary</h2>
+<p class="summary-intro">This report maps each Veracode finding to a concrete remediation plan from the CFT (Common Fix Taxonomy). Findings are grouped by CWE and location; expand any group below to see affected files and the recommended fix.</p>
+<div class="summary-stats">
+<div class="summary-stat"><span class="num">3</span><span class="label">Findings</span></div>
+<div class="summary-stat"><span class="num">2</span><span class="label">Fix groups</span></div>
+<div class="summary-sev"><span class="pill sev-veryhigh"><span class="dot"></span>VeryHigh <strong>1</strong></span><span class="pill sev-high"><span class="dot"></span>High <strong>1</strong></span><span class="pill sev-medium"><span class="dot"></span>Medium <strong>1</strong></span></div>
+</div>
+<div class="summary-skipped"><span>Skipped (already mitigated): 3</span> · <span>Skipped (no CWE on finding): 1</span> · <span>Skipped (below <code>Medium</code> threshold): 5</span></div></section>
+<div class="groups-heading">Fix groups</div>
+<details class="group" id="group-1">
+<summary>
+<div class="group-summary-content">
+<div class="group-header">
+<span class="group-num">Group 1:</span>
+<span class="group-cwe">CWE-89</span>
+<span class="group-title">SQL Injection</span>
+</div>
+<div class="group-location"><span class="meta-label">Location: </span><code class="path">src/main/java/com/acme/payments/dao</code></div>
+</div>
+<span class="pill sev-veryhigh"><span class="dot"></span>VeryHigh</span>
+</summary>
+<div class="group-body">
+<div class="group-meta"><span class="pill sev-veryhigh"><span class="dot"></span>VeryHigh</span><span class="pill tag"><strong>2</strong>findings</span><span class="pill tag"><strong>Language</strong><code>java</code></span></div>
+<table>
+<thead><tr><th>Severity</th><th>Status</th><th>Issue ID</th><th>Title</th><th>Line</th><th>File</th></tr></thead>
+<tbody><tr><td class="severity"><span class="pill sev-veryhigh"><span class="dot"></span>VeryHigh</span></td><td>OPEN</td><td><code>101</code></td><td>SQL Injection</td><td>142</td><td class="file"><code>src/main/java/com/acme/payments/dao/OrderDao.java</code></td></tr><tr><td class="severity"><span class="pill sev-high"><span class="dot"></span>High</span></td><td>OPEN</td><td><code>102</code></td><td>SQL Injection</td><td>88</td><td class="file"><code>src/main/java/com/acme/payments/dao/CustomerDao.java</code></td></tr></tbody>
+</table>
+<div class="plan-note">Pick ONE of CFT021.01/02/03 — they are alternatives, not complements. CFT033.05 (DB role restriction) is defense-in-depth that applies in addition.</div>
+<div class="plan-section-label">Primary fix (Sufficient — pick one)</div>
+<div class="cft-entry">
+<div class="cft-entry-header"><span class="cft-id">CFT021.01</span><span class="cft-name">Prepared Statements</span></div>
+<div class="cft-entry-pills"><span class="pill tag"><strong>Effort</strong>Medium</span><span class="pill tag"><strong>Control</strong>PrimaryFix</span><span class="pill tag"><strong>Actor</strong>Developer</span></div>
+<p class="desc">Use parameterized queries that bind values separately from SQL text (PreparedStatement, parameterized cursor.execute, `?` placeholders).</p>
+<div class="lang-block-label">Language guidance (java)</div>
+<div class="lang-library">JDBC PreparedStatement (built-in)</div><div class="lang-notes">Spring `JdbcTemplate.query(sql, params, rowMapper)` parameter binding is also safe.</div><pre><code>String sql = &quot;SELECT * FROM users WHERE id = ?&quot;;
+try (PreparedStatement ps = conn.prepareStatement(sql)) {
+  ps.setLong(1, userId);
+  try (ResultSet rs = ps.executeQuery()) { ... }
+}</code></pre><div class="vrfy-label">Verification</div>
+<ul class="checklist"><li>No SQL text is constructed by string concatenation, format strings, or template interpolation with untrusted data</li><li>Parameters are bound, not formatted into the query string</li><li>Where dynamic identifiers (table/column names) are unavoidable, they come from a server-side allowlist — not user input</li></ul>
+<div class="cm-label">Common mistakes</div>
+<ul class="common-mistakes"><li>Mixing parameterization with concatenation in the same query</li><li>Using `LIKE` patterns that re-introduce special-character risk</li></ul>
+<div class="ref-label">References</div>
+<ul class="references"><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP SQL Injection Prevention Cheat Sheet</a></li><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Query_Parameterization_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP Query Parameterization Cheat Sheet</a></li></ul>
+</div>
+<div class="cft-entry">
+<div class="cft-entry-header"><span class="cft-id">CFT021.02</span><span class="cft-name">Parameterized Stored Procedures</span></div>
+<div class="cft-entry-pills"><span class="pill tag"><strong>Effort</strong>Medium</span><span class="pill tag"><strong>Control</strong>PrimaryFix</span><span class="pill tag"><strong>Actor</strong>Developer</span></div>
+<p class="desc">Call stored procedures with bound parameters. Procedures themselves must not construct dynamic SQL internally.</p>
+<div class="mapping-note"><em>Mapping note:</em> Only if the procedure does not construct dynamic SQL internally.</div>
+<div class="lang-block-label">Language guidance (java)</div>
+<div class="lang-library">CallableStatement with bound parameters</div><div class="lang-notes">Procedure body itself must NOT concatenate parameters into dynamic SQL.</div><pre><code>try (CallableStatement cs = conn.prepareCall(&quot;{call get_user(?)}&quot;)) {
+    cs.setLong(1, userId);
+    try (ResultSet rs = cs.executeQuery()) { ... }
+}</code></pre><div class="vrfy-label">Verification</div>
+<ul class="checklist"><li>Stored procedures use parameter binding, not string concatenation internally</li><li>Procedure definitions are reviewed for dynamic SQL construction</li><li>Procedure parameters are typed appropriately</li></ul>
+<div class="cm-label">Common mistakes</div>
+<ul class="common-mistakes"><li>Stored procedures that internally concatenate parameters into dynamic SQL</li></ul>
+<div class="ref-label">References</div>
+<ul class="references"><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP SQL Injection Prevention Cheat Sheet</a></li></ul>
+</div>
+<div class="cft-entry">
+<div class="cft-entry-header"><span class="cft-id">CFT021.03</span><span class="cft-name">ORM Query Construction</span></div>
+<div class="cft-entry-pills"><span class="pill tag"><strong>Effort</strong>Medium</span><span class="pill tag"><strong>Control</strong>PrimaryFix</span><span class="pill tag"><strong>Actor</strong>Developer</span></div>
+<p class="desc">Use a well-tested ORM that constructs parameterized queries from object expressions.</p>
+<div class="mapping-note"><em>Mapping note:</em> Excluding ORM raw-query escape hatches.</div>
+<div class="lang-block-label">Language guidance (java)</div>
+<div class="lang-library">JPA Criteria API / Spring Data JPA derived queries / explicit parameter binding in JPQL</div><div class="lang-notes">AVOID `@Query(nativeQuery=true)` with concatenated input.</div><pre><code>// Derived query — safe by construction:
+List&lt;User&gt; findByEmail(String email);
+// Explicit JPQL with bind:
+@Query(&quot;SELECT u FROM User u WHERE u.email = :email&quot;)
+List&lt;User&gt; byEmail(@Param(&quot;email&quot;) String email);</code></pre><div class="vrfy-label">Verification</div>
+<ul class="checklist"><li>All persistence access uses ORM expressions or parameterized queries</li><li>Where the ORM exposes raw-SQL escape hatches (Django `extra`, SQLAlchemy `text`, ActiveRecord `find_by_sql`), they are absent or use bound parameters</li><li>Dynamic table/column names come from a server-side allowlist</li></ul>
+<div class="cm-label">Common mistakes</div>
+<ul class="common-mistakes"><li>Using ORM raw-query escape hatches (e.g., Django `extra`, SQLAlchemy `text`) with user input</li></ul>
+<div class="ref-label">References</div>
+<ul class="references"><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP SQL Injection Prevention Cheat Sheet</a></li></ul>
+</div>
+<div class="plan-section-label">Defense in depth (additional layers)</div>
+<ul class="plan-list">
+<li class="secondary"><span class="cft-id">CFT033.05</span><span>Database Role Restriction</span><span class="pill tag" style="margin-left:auto"><strong>Effort</strong>Medium</span></li>
+</ul>
+<div class="plan-section-label">Partial fixes (apply alongside the primary)</div>
+<ul class="plan-list">
+<li class="secondary"><span class="cft-id">CFT001.01</span><span>Allowlist Validation</span></li>
+<li class="secondary"><span class="cft-id">CFT002.01</span><span>Context-Aware Escaping</span></li>
+</ul>
+</div>
+</details>
+<details class="group" id="group-2">
+<summary>
+<div class="group-summary-content">
+<div class="group-header">
+<span class="group-num">Group 2:</span>
+<span class="group-cwe">CWE-79</span>
+<span class="group-title">Cross-Site Scripting (XSS)</span>
+</div>
+<div class="group-location"><span class="meta-label">Location: </span><code class="path">src/main/webapp/views</code></div>
+</div>
+<span class="pill sev-medium"><span class="dot"></span>Medium</span>
+</summary>
+<div class="group-body">
+<div class="group-meta"><span class="pill sev-medium"><span class="dot"></span>Medium</span><span class="pill tag"><strong>1</strong>finding</span><span class="pill tag"><strong>Language</strong><code>java</code></span></div>
+<table>
+<thead><tr><th>Severity</th><th>Status</th><th>Issue ID</th><th>Title</th><th>Line</th><th>File</th></tr></thead>
+<tbody><tr><td class="severity"><span class="pill sev-medium"><span class="dot"></span>Medium</span></td><td>OPEN</td><td><code>201</code></td><td>Cross-Site Scripting (XSS)</td><td>33</td><td class="file"><code>src/main/webapp/views/profile.jsp</code></td></tr></tbody>
+</table>
+<div class="plan-note">Apply context-appropriate encoding (CFT018.01-04) OR an auto-escaping template engine (CFT020.01). CSP (CFT019.*) is defense-in-depth — never the primary fix.</div>
+<div class="plan-section-label">Primary fix (Sufficient — pick one)</div>
+<div class="cft-entry">
+<div class="cft-entry-header"><span class="cft-id">CFT018.01</span><span class="cft-name">HTML Entity Encoding</span></div>
+<div class="cft-entry-pills"><span class="pill tag"><strong>Effort</strong>Medium</span><span class="pill tag"><strong>Control</strong>PrimaryFix</span><span class="pill tag"><strong>Actor</strong>Developer</span></div>
+<p class="desc">Encode `&lt;`, `&gt;`, `&amp;`, `&quot;`, `&#x27;` (and others as required) before inserting untrusted data into HTML body context.</p>
+<div class="mapping-note"><em>Mapping note:</em> For HTML body context.</div>
+<div class="lang-block-label">Language guidance (java)</div>
+<div class="lang-library">OWASP Java Encoder (`Encode.forHtml`, `Encode.forHtmlAttribute`)</div><pre><code>import org.owasp.encoder.Encode;
+out.println(&quot;&lt;p&gt;Hello, &quot; + Encode.forHtml(userName) + &quot;&lt;/p&gt;&quot;);</code></pre><div class="vrfy-label">Verification</div>
+<ul class="checklist"><li>Every dynamic value placed into HTML output goes through an encoder</li><li>The encoder matches the destination context (HTML body, attribute, JS, URL, CSS — see CFT018.02/03/04)</li><li>Encoders come from a vetted library (OWASP Java Encoder, DOMPurify, Apache Commons Text, html-escape) — not handwritten</li></ul>
+<div class="cm-label">Common mistakes</div>
+<ul class="common-mistakes"><li>Using HTML encoding for data inserted into a JS string or URL attribute (wrong context)</li><li>Double-encoding inputs that were already encoded</li></ul>
+<div class="ref-label">References</div>
+<ul class="references"><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP XSS Prevention Cheat Sheet</a></li><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html#rule-1-html-encode-before-inserting-untrusted-data-into-html-element-content" target="_blank" rel="noopener">OWASP Cross Site Scripting Prevention Rule</a></li></ul>
+</div>
+<div class="cft-entry">
+<div class="cft-entry-header"><span class="cft-id">CFT018.02</span><span class="cft-name">JavaScript Context Encoding</span></div>
+<div class="cft-entry-pills"><span class="pill tag"><strong>Effort</strong>Medium</span><span class="pill tag"><strong>Control</strong>PrimaryFix</span><span class="pill tag"><strong>Actor</strong>Developer</span></div>
+<p class="desc">Encode data with `\uXXXX` escapes when inserting into JavaScript string literals. Never insert untrusted data into a JS code position.</p>
+<div class="mapping-note"><em>Mapping note:</em> For JS string context.</div>
+<div class="lang-block-label">Language guidance (java)</div>
+<div class="lang-library">OWASP Java Encoder `Encode.forJavaScript`</div><div class="lang-notes">Avoid inserting untrusted data into JS code positions entirely — prefer data attributes + DOM reads.</div><pre><code>import org.owasp.encoder.Encode;
+out.println(&quot;var name = &#x27;&quot; + Encode.forJavaScript(userName) + &quot;&#x27;;&quot;);</code></pre><div class="vrfy-label">Verification</div>
+<ul class="checklist"><li>Data inserted into a JavaScript string literal uses `\uXXXX` escaping, not HTML entity encoding</li><li>No untrusted data is ever placed into a JS code position (function names, identifiers, JSON.parse on attacker JSON-ish strings)</li><li>Where data is passed to JS, prefer `data-` attributes + DOM reads over inline injection</li></ul>
+<div class="cm-label">Common mistakes</div>
+<ul class="common-mistakes"><li>Escaping for JS string context but using HTML escaping function (forward-slash, ampersand handled wrong)</li><li>Concatenating into a `&lt;script&gt;` block — even correctly escaped, breaking out via `&lt;/script&gt;` succeeds</li><li>Embedding user JSON inside a JS literal with `JSON.stringify` alone — needs additional `&lt;`/`&gt;` escapes for safe HTML embedding</li></ul>
+<div class="ref-label">References</div>
+<ul class="references"><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP XSS Prevention Cheat Sheet</a></li></ul>
+</div>
+<div class="cft-entry">
+<div class="cft-entry-header"><span class="cft-id">CFT018.03</span><span class="cft-name">URL Encoding</span></div>
+<div class="cft-entry-pills"><span class="pill tag"><strong>Effort</strong>Low</span><span class="pill tag"><strong>Control</strong>PrimaryFix</span><span class="pill tag"><strong>Actor</strong>Developer</span></div>
+<p class="desc">Percent-encode data inserted into URL parameters, paths, or attribute values.</p>
+<div class="mapping-note"><em>Mapping note:</em> For URL parameter / attribute context.</div>
+<div class="lang-block-label">Language guidance (java)</div>
+<div class="lang-library">URLEncoder.encode(value, StandardCharsets.UTF_8)</div><pre><code>String url = &quot;https://api/x?q=&quot; + URLEncoder.encode(userInput, StandardCharsets.UTF_8);</code></pre><div class="vrfy-label">Verification</div>
+<ul class="checklist"><li>Data inserted into URL parameters is percent-encoded</li><li>Encoding library used is appropriate for the language and matches RFC 3986</li></ul>
+<div class="cm-label">Common mistakes</div>
+<ul class="common-mistakes"><li>URL-encoding the value but not the query parameter name</li><li>Using `encodeURI` instead of `encodeURIComponent` — leaves `?`, `&amp;`, `=` unescaped</li><li>Encoding twice (once at the URL layer, once at the response layer) — receiver decodes once and sees raw user input</li></ul>
+<div class="ref-label">References</div>
+<ul class="references"><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP XSS Prevention Cheat Sheet</a></li></ul>
+</div>
+<div class="cft-entry">
+<div class="cft-entry-header"><span class="cft-id">CFT018.04</span><span class="cft-name">CSS Context Encoding</span></div>
+<div class="cft-entry-pills"><span class="pill tag"><strong>Effort</strong>Low</span><span class="pill tag"><strong>Control</strong>PrimaryFix</span><span class="pill tag"><strong>Actor</strong>Developer</span></div>
+<p class="desc">Encode data inserted into CSS property values; avoid inserting untrusted data into CSS at all where possible.</p>
+<div class="mapping-note"><em>Mapping note:</em> For CSS context.</div>
+<div class="lang-block-label">Language guidance (java)</div>
+<div class="lang-library">OWASP Java Encoder `Encode.forCssString` / `Encode.forCssUrl`</div><pre><code>import org.owasp.encoder.Encode;
+// Inside &lt;style&gt; attribute or block:
+out.write(&quot;background: url(&#x27;&quot; + Encode.forCssUrl(userColor) + &quot;&#x27;)&quot;);
+out.write(&quot;content: &#x27;&quot; + Encode.forCssString(userLabel) + &quot;&#x27;&quot;);</code></pre><div class="vrfy-label">Verification</div>
+<ul class="checklist"><li>Avoid inserting untrusted data into CSS where possible</li><li>When unavoidable, restrict to known-safe character set</li><li>Use CSS variables with content set via JS string assignment rather than template inlining</li></ul>
+<div class="cm-label">Common mistakes</div>
+<ul class="common-mistakes"><li>Inserting user input into `&lt;style&gt;` blocks at template time — even with CSS escaping, `expression()` or `@import` URL contexts open new sinks</li><li>Trusting `style.backgroundColor = userColor` because CSSOM rejects &#x27;most&#x27; garbage — `url()`, gradients are still attacker-controlled</li><li>Building dynamic class names from user input — class collision with internal selectors enables CSS injection</li></ul>
+<div class="ref-label">References</div>
+<ul class="references"><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP XSS Prevention Cheat Sheet</a></li></ul>
+</div>
+<div class="cft-entry">
+<div class="cft-entry-header"><span class="cft-id">CFT020.01</span><span class="cft-name">Auto-Escaping Template Engine</span></div>
+<div class="cft-entry-pills"><span class="pill tag"><strong>Effort</strong>High</span><span class="pill tag"><strong>Control</strong>PrimaryFix</span><span class="pill tag"><strong>Actor</strong>Developer</span></div>
+<p class="desc">Use template engines that auto-escape by default (Jinja2 autoescape, Thymeleaf, React JSX, Go html/template).</p>
+<div class="mapping-note"><em>Mapping note:</em> Auto-escaping template engines handle most cases by default.</div>
+<div class="lang-block-label">Language guidance (java)</div>
+<div class="lang-library">Thymeleaf, JSF, or other auto-escaping engines</div><pre><code>&lt;!-- Thymeleaf: th:text is auto-escaped --&gt;
+&lt;span th:text=&quot;${user.name}&quot;&gt;&lt;/span&gt;</code></pre><div class="vrfy-label">Verification</div>
+<ul class="checklist"><li>The chosen template engine has auto-escaping enabled by default (Jinja2 `autoescape=True`, Thymeleaf, React JSX, Go `html/template`)</li><li>Templates do not use raw / safe filters or `\|safe`-style overrides except on values that have passed an HTML sanitizer (CFT002.02)</li><li>All output paths go through the template engine — no string concatenation of HTML</li></ul>
+<div class="cm-label">Common mistakes</div>
+<ul class="common-mistakes"><li>Using the auto-escaping engine but reaching into `Markup`/`SafeString`/`html_safe` to opt out for one field that turned out to be user-controlled</li><li>Server-side render is escaped but the client-side hydration re-renders with a different (unescaped) engine</li><li>Auto-escape disabled at the template inheritance level for &#x27;admin&#x27; views that an attacker reaches via stored XSS</li></ul>
+<div class="ref-label">References</div>
+<ul class="references"><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP XSS Prevention Cheat Sheet</a></li></ul>
+</div>
+<div class="plan-section-label">Defense in depth (additional layers)</div>
+<ul class="plan-list">
+<li class="secondary"><span class="cft-id">CFT019.01</span><span>CSP Header Enforcement</span><span class="pill tag" style="margin-left:auto"><strong>Effort</strong>Medium</span></li>
+<li class="secondary"><span class="cft-id">CFT019.02</span><span>Nonce-Based Script Allowlisting</span><span class="pill tag" style="margin-left:auto"><strong>Effort</strong>Medium</span></li>
+</ul>
+<div class="plan-section-label">Partial fixes (apply alongside the primary)</div>
+<ul class="plan-list">
+<li class="secondary"><span class="cft-id">CFT001.01</span><span>Allowlist Validation</span></li>
+</ul>
+</div>
+</details>
+</div>
+</body>
+</html>
