@@ -383,11 +383,125 @@ ul.checklist li, ul.common-mistakes li, ul.references li { margin: 3px 0; }
   margin: 28px 0 14px;
 }
 
+/* ---- Large-report enhancements: fix-first, controls, index ---- */
+.fix-first {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.fix-first h2 {
+  margin: 0 0 6px;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.ff-intro { margin: 0 0 16px; font-size: 13.5px; color: var(--text-muted); }
+.ff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.ff-card {
+  display: block;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: var(--text);
+}
+.ff-card:hover { border-color: var(--accent); text-decoration: none; }
+.ff-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ff-cwe { font-family: ui-monospace, Consolas, monospace; color: var(--accent); font-weight: 600; font-size: 13px; }
+.ff-issue { font-weight: 600; font-size: 14.5px; margin-bottom: 6px; }
+.ff-rationale { font-size: 12.5px; color: var(--text-muted); margin-bottom: 6px; }
+.ff-loc { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ff-loc code { background: transparent; padding: 0; color: var(--text-muted); }
+.ff-jump { font-size: 12px; color: var(--accent); font-weight: 500; }
+
+.controls {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(15, 20, 25, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+.controls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.filter-group { display: flex; align-items: center; gap: 8px; }
+.filter-group.grow { flex: 1; min-width: 180px; }
+.filter-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit; font-size: 12px;
+  padding: 4px 12px; border-radius: 999px;
+  background: var(--surface-2); color: var(--text-muted);
+  border: 1px solid var(--border); cursor: pointer;
+}
+.chip:hover { color: var(--text); }
+.chip.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+.text-search, .cwe-search {
+  width: 100%;
+  font: inherit; font-size: 13px;
+  padding: 7px 12px;
+  background: var(--code-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.text-search::placeholder, .cwe-search::placeholder { color: var(--text-dim); }
+.dropdown { position: relative; }
+.dropdown-toggle {
+  font: inherit; font-size: 12.5px;
+  padding: 6px 12px;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+}
+.dropdown-panel {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+  width: 280px; max-height: 320px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.dropdown-panel .cwe-search { margin-bottom: 8px; }
+.cwe-options { display: flex; flex-direction: column; gap: 2px; }
+.cwe-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.cwe-opt:hover { background: var(--surface-2); }
+.cwe-opt > span:first-of-type { flex: 1; }
+.cwe-count { color: var(--text-dim); font-size: 12px; }
+.clear-btn {
+  font: inherit; font-size: 12.5px;
+  padding: 6px 12px; background: transparent; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+}
+.clear-btn:hover { color: var(--text); border-color: var(--accent); }
+.result-count { margin-top: 10px; font-size: 12.5px; color: var(--text-muted); }
+
+.index-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 4px 8px; margin-bottom: 28px; overflow-x: auto;
+}
+table.index { margin: 0; font-size: 13px; }
+table.index thead th[data-key] { cursor: pointer; user-select: none; white-space: nowrap; }
+table.index thead th[data-key]:hover { color: var(--text-muted); }
+table.index thead th[aria-sort="ascending"]::after { content: " ▲"; color: var(--accent); }
+table.index thead th[aria-sort="descending"]::after { content: " ▼"; color: var(--accent); }
+table.index td.num, table.index th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.index .idx-num a { color: var(--text-dim); }
+table.index .idx-loc code { background: transparent; padding: 0; color: var(--text-muted); }
+
+.is-hidden { display: none !important; }
+
 @media (max-width: 700px) {
   .container { padding: 20px 16px 60px; }
   .summary-stats { gap: 18px; }
   .summary-sev { margin-left: 0; width: 100%; }
   .group > summary, .group-body { padding-left: 16px; padding-right: 16px; }
+  .controls { position: static; }
+  .ff-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -395,8 +509,8 @@ ul.checklist li, ul.common-mistakes li, ul.references li { margin: 3px 0; }
 <div class="container">
 <header class="header">
 <h1>Veracode Remediation Fix Plan Report</h1>
-<div class="subtitle">Acme Payments Service · STATIC · Veracode SAST 2026.1</div>
-<div class="meta-strip"><span><span class="meta-label">Source:</span>veracode-api</span><span><span class="meta-label">Scan ID:</span><code>abc123-def456</code></span><span><span class="meta-label">Sandbox:</span>release-2026.06</span><span><span class="meta-label">Scan date:</span>2026-06-03</span></div>
+<div class="subtitle">App: Acme Payments Service · STATIC · Veracode SAST 2026.1</div>
+<div class="meta-strip"><span><span class="meta-label">Source:</span>veracode-api</span><span><span class="meta-label">Scan ID:</span><code>abc123-def456</code></span><span><span class="meta-label">Sandbox:</span>release-2026.06</span><span><span class="meta-label">Scan date:</span>2026-06-04</span></div>
 </header>
 <section class="summary">
 <h2>Summary</h2>
@@ -408,7 +522,7 @@ ul.checklist li, ul.common-mistakes li, ul.references li { margin: 3px 0; }
 </div>
 <div class="summary-skipped"><span>Skipped (already mitigated): 3</span> · <span>Skipped (no CWE on finding): 1</span> · <span>Skipped (below <code>Medium</code> threshold): 5</span></div></section>
 <div class="groups-heading">Fix groups</div>
-<details class="group" id="group-1">
+<details class="group" id="group-1" data-idx="1" data-severity="VeryHigh" data-sevrank="5" data-cwe="CWE-89" data-effort="Medium" data-count="2" data-text="cwe-89 sql injection java src/main/java/com/acme/payments/dao sql injection src/main/java/com/acme/payments/dao/orderdao.java 101 sql injection src/main/java/com/acme/payments/dao/customerdao.java 102">
 <summary>
 <div class="group-summary-content">
 <div class="group-header">
@@ -488,7 +602,7 @@ List&lt;User&gt; byEmail(@Param(&quot;email&quot;) String email);</code></pre><d
 </ul>
 </div>
 </details>
-<details class="group" id="group-2">
+<details class="group" id="group-2" data-idx="2" data-severity="Medium" data-sevrank="3" data-cwe="CWE-79" data-effort="Medium" data-count="1" data-text="cwe-79 cross-site scripting (xss) java src/main/webapp/views cross-site scripting (xss) src/main/webapp/views/profile.jsp 201">
 <summary>
 <div class="group-summary-content">
 <div class="group-header">
