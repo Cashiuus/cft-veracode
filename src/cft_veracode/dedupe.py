@@ -47,4 +47,5 @@ def _file_root(path: "str | None") -> str:
     # Normalize separators
     norm = path.replace("\\", "/")
     parent = os.path.dirname(norm)
-    return parent or "."
+    # Bugfix: DLL module paths via REST API may not always have a parent directory
+    return parent or norm or "."

@@ -78,11 +78,14 @@ def parse_findings_api(doc: dict) -> list[Finding]:
             file_path=(
                 details.get("file_path")
                 or details.get("file_name")
+                # Bugfix: REST API has "module" and "procedure" instead of other fields
+                or details.get("module")
                 or details.get("scope")
                 or raw.get("scope")
             ),
             line=_to_int(details.get("file_line_number")),
-            function_name=details.get("function_name"),
+            # Bugfix: REST API has "module" and "procedure" instead of other fields
+            function_name=details.get("function_name") or details.get("procedure"),
         )
 
         issue_id = raw.get("issue_id")
@@ -90,6 +93,7 @@ def parse_findings_api(doc: dict) -> list[Finding]:
 
         mitigation_status = _mitigation_status(raw, status)
         review = status.get("mitigation_review_status")
+        # NOTE: "status" is present in REST API but not other data sources
         finding_state = status.get("status")  # e.g. "OPEN" / "CLOSED"
         flaw_url = _flaw_details_url(raw)
 
