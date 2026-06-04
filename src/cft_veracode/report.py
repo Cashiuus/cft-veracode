@@ -119,19 +119,19 @@ def render_markdown(report: Report) -> str:
     # Executive summary
     add("## Summary")
     add("")
-    add(f"- **Total findings (after filters):** {report.total_findings}")
-    add(f"- **Fix groups:** {len(report.groups)}")
+    add(f"- **Total findings (after filters):** {report.total_findings:,d}")
+    add(f"- **Fix groups:** {len(report.groups):,d}")
     sev_counts = report.severity_counts
     if sev_counts:
         ordered = sorted(sev_counts.items(), key=lambda kv: -SEVERITY_RANK.get(kv[0], -1))
-        sev_summary = ", ".join(f"{v} {k}" for k, v in ordered)
+        sev_summary = ", ".join(f"{v:,d} {k}" for k, v in ordered)
         add(f"- **By severity:** {sev_summary}")
     if report.skipped_mitigated:
-        add(f"- _Skipped (already mitigated):_ {report.skipped_mitigated}")
+        add(f"- _Skipped (already mitigated):_ {report.skipped_mitigated:,d}")
     if report.skipped_no_cwe:
-        add(f"- _Skipped (no CWE on finding):_ {report.skipped_no_cwe}")
+        add(f"- _Skipped (no CWE on finding):_ {report.skipped_no_cwe:,d}")
     if report.skipped_below_severity:
-        add(f"- _Skipped (below `{report.min_severity}` threshold):_ {report.skipped_below_severity}")
+        add(f"- _Skipped (below `{report.min_severity}` threshold):_ {report.skipped_below_severity:,d}")
     add("")
 
     if not report.groups:
@@ -775,7 +775,7 @@ def _sev_pill(severity: str, count: Optional[int] = None) -> str:
     label = _esc(severity)
     inner = f'<span class="dot"></span>{label}'
     if count is not None:
-        inner += f' <strong>{count}</strong>'
+        inner += f' <strong>{count:,d}</strong>'
     return f'<span class="pill {css}">{inner}</span>'
 
 
@@ -858,13 +858,13 @@ def _render_html_summary(report: Report) -> str:
 
     skipped_lines: list[str] = []
     if report.skipped_mitigated:
-        skipped_lines.append(f"<span>Skipped (already mitigated): {report.skipped_mitigated}</span>")
+        skipped_lines.append(f"<span>Skipped (already mitigated): {report.skipped_mitigated:,d}</span>")
     if report.skipped_no_cwe:
-        skipped_lines.append(f"<span>Skipped (no CWE on finding): {report.skipped_no_cwe}</span>")
+        skipped_lines.append(f"<span>Skipped (no CWE on finding): {report.skipped_no_cwe:,d}</span>")
     if report.skipped_below_severity:
         skipped_lines.append(
             f"<span>Skipped (below <code>{_esc(report.min_severity)}</code> threshold): "
-            f"{report.skipped_below_severity}</span>"
+            f"{report.skipped_below_severity:,d}</span>"
         )
     skipped_html = (
         f'<div class="summary-skipped">{" · ".join(skipped_lines)}</div>'
@@ -879,9 +879,9 @@ def _render_html_summary(report: Report) -> str:
         'and location; expand any group below to see affected files and the recommended fix.'
         '</p>\n'
         '<div class="summary-stats">\n'
-        f'<div class="summary-stat"><span class="num">{report.total_findings}'
+        f'<div class="summary-stat"><span class="num">{report.total_findings:,d}'
         '</span><span class="label">Findings</span></div>\n'
-        f'<div class="summary-stat"><span class="num">{len(report.groups)}'
+        f'<div class="summary-stat"><span class="num">{len(report.groups):,d}'
         '</span><span class="label">Fix groups</span></div>\n'
         f'<div class="summary-sev">{"".join(sev_pills)}</div>\n'
         '</div>\n'

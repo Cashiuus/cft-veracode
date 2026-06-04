@@ -14,7 +14,7 @@ def test_end_to_end_pipeline_markdown():
     findings = ingest(FIXTURES / "pipeline-sample.json", format="pipeline")
     report = build_report(findings)
     md = report.to_markdown()
-    assert "Veracode remediation report" in md
+    assert "Veracode Remediation Fix Plan" in md
     assert "DemoApp" in md
     assert "CWE-89" in md
     assert "CWE-79" in md
@@ -300,7 +300,7 @@ def test_html_is_the_default_via_report_helper():
     report = build_report(findings)
     # All three formats coexist
     assert report.to_html().startswith("<!DOCTYPE html>")
-    assert report.to_markdown().startswith("# Veracode remediation report")
+    assert report.to_markdown().startswith("# Veracode Remediation Fix Plan")
     assert report.to_json().startswith("{")
 
 
