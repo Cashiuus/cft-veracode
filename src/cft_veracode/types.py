@@ -72,6 +72,15 @@ class Finding:
     def is_mitigated(self) -> bool:
         return self.mitigation_status in ("ACCEPTED", "APPROVED")
 
+    @property
+    def is_closed(self) -> bool:
+        """True when the scanner reports the finding as resolved/closed.
+
+        Only the REST API populates `status` ("OPEN"/"CLOSED"); pipeline and
+        SARIF inputs leave it None, so this is always False for those sources.
+        """
+        return (self.status or "").strip().lower() == "closed"
+
 
 @dataclass
 class FindingGroup:
@@ -104,6 +113,7 @@ class Report:
     skipped_mitigated: int = 0
     skipped_no_cwe: int = 0
     skipped_below_severity: int = 0
+    skipped_closed: int = 0
     language_default: Optional[str] = None
     effort_cap: Optional[str] = None
     min_severity: Optional[str] = None

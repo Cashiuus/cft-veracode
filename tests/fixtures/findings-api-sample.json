@@ -64,6 +64,27 @@
           "file_line_number": 31,
           "function_name": "hashPassword"
         }
+      },
+      {
+        "issue_id": 10004,
+        "scan_type": "STATIC",
+        "description": "Path traversal via unsanitized file name; fixed in a later scan.",
+        "violates_policy": true,
+        "finding_status": {
+          "status": "CLOSED",
+          "resolution": "UNRESOLVED",
+          "first_found_date": "2026-03-01T12:00:00Z",
+          "last_seen_date": "2026-04-15T08:00:00Z",
+          "mitigation_review_status": "NONE"
+        },
+        "finding_details": {
+          "severity": 3,
+          "cwe": { "id": 22, "name": "Improper Limitation of a Pathname to a Restricted Directory" },
+          "file_path": "src/main/java/com/example/io/FileStore.java",
+          "file_name": "FileStore.java",
+          "file_line_number": 58,
+          "function_name": "read"
+        }
       }
     ]
   }

@@ -70,6 +70,8 @@ def _add_common_filters(p: argparse.ArgumentParser) -> None:
                    help="Drop findings below this severity")
     p.add_argument("--include-mitigated", action="store_true",
                    help="Include findings already marked mitigated (default: skip)")
+    p.add_argument("--include-closed", action="store_true",
+                   help="Include findings the scanner reports as CLOSED (default: skip)")
 
 
 def _cmd_ingest(args) -> int:
@@ -126,6 +128,7 @@ def _emit(args, findings) -> int:
         language=args.language,
         effort_cap=args.effort_cap,
         skip_mitigated=not args.include_mitigated,
+        skip_closed=not args.include_closed,
         min_severity=args.min_severity,
     )
 

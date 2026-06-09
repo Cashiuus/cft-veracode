@@ -10,7 +10,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 def test_api_basic_parse():
     findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
-    assert len(findings) == 3
+    assert len(findings) == 4
 
 
 def test_api_extracts_mitigation_status():
@@ -27,6 +27,17 @@ def test_api_extracts_finding_status():
     md5 = next(f for f in findings if f.cwe_id == "CWE-327")
     assert sqli.status == "OPEN"
     assert md5.status == "CLOSED"
+
+
+def test_api_is_closed_property():
+    """Finding.is_closed reflects a CLOSED status case-insensitively; the
+    path-traversal finding is closed but NOT mitigated."""
+    findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
+    sqli = next(f for f in findings if f.cwe_id == "CWE-89")
+    closed = next(f for f in findings if f.cwe_id == "CWE-22")
+    assert sqli.is_closed is False
+    assert closed.is_closed is True
+    assert closed.is_mitigated is False
 
 
 def test_api_violates_policy_flag():

@@ -28,6 +28,7 @@ def build_report(
     language: Optional[str] = None,
     effort_cap: Optional[str] = None,
     skip_mitigated: bool = True,
+    skip_closed: bool = True,
     min_severity: Optional[str] = None,
 ) -> Report:
     """Group findings, resolve CFT plans, return a structured Report.
@@ -37,6 +38,7 @@ def build_report(
         language: Optional override language code; otherwise inferred per group from file paths.
         effort_cap: Pass-through to cft.resolve (Low/Medium/High).
         skip_mitigated: Drop findings already marked ACCEPTED/MITIGATED in Veracode.
+        skip_closed: Drop findings the scanner reports as CLOSED (REST API only).
         min_severity: Drop findings below this severity level.
     """
     if findings and getattr(findings[0], "scan_context", None):
@@ -48,12 +50,19 @@ def build_report(
     skipped_mitigated = 0
     skipped_no_cwe = 0
     skipped_below_severity = 0
+    skipped_closed = 0
     min_rank = SEVERITY_RANK.get(min_severity, -1) if min_severity else -1
 
     kept: list[Finding] = []
     for f in findings:
         if skip_mitigated and f.is_mitigated:
             skipped_mitigated += 1
+            continue
+        # A finding the scanner reports CLOSED is no longer an open issue; drop
+        # it before the CWE/severity filters so the count covers every closed
+        # finding that wasn't already counted as mitigated.
+        if skip_closed and f.is_closed:
+            skipped_closed += 1
             continue
         if not f.cwe_id:
             skipped_no_cwe += 1
@@ -79,6 +88,7 @@ def build_report(
         skipped_mitigated=skipped_mitigated,
         skipped_no_cwe=skipped_no_cwe,
         skipped_below_severity=skipped_below_severity,
+        skipped_closed=skipped_closed,
         language_default=language,
         effort_cap=effort_cap,
         min_severity=min_severity,
@@ -127,6 +137,8 @@ def render_markdown(report: Report) -> str:
         ordered = sorted(sev_counts.items(), key=lambda kv: -SEVERITY_RANK.get(kv[0], -1))
         sev_summary = ", ".join(f"{v:,d} {k}" for k, v in ordered)
         add(f"- **By severity:** {sev_summary}")
+    if report.skipped_closed:
+        add(f"- **Closed:** {report.skipped_closed:,d}")
     if report.skipped_mitigated:
         add(f"- _Skipped (already mitigated):_ {report.skipped_mitigated:,d}")
     if report.skipped_no_cwe:
@@ -311,6 +323,7 @@ def render_json(report: Report) -> str:
             "skipped_mitigated": report.skipped_mitigated,
             "skipped_no_cwe": report.skipped_no_cwe,
             "skipped_below_severity": report.skipped_below_severity,
+            "skipped_closed": report.skipped_closed,
         },
         "filters": {
             "language": report.language_default,
@@ -1219,6 +1232,8 @@ def _render_html_summary(report: Report) -> str:
             sev_pills.append(_sev_pill(sev, count))
 
     skipped_lines: list[str] = []
+    if report.skipped_closed:
+        skipped_lines.append(f"<span>Closed: {report.skipped_closed:,d}</span>")
     if report.skipped_mitigated:
         skipped_lines.append(f"<span>Skipped (already mitigated): {report.skipped_mitigated:,d}</span>")
     if report.skipped_no_cwe:
@@ -1233,6 +1248,15 @@ def _render_html_summary(report: Report) -> str:
         if skipped_lines else ""
     )
 
+    # Open-finding label clarifies the count is open-only whenever we excluded
+    # closed findings; otherwise keep the original neutral "Findings" wording.
+    open_label = "Open findings" if report.skipped_closed else "Findings"
+    closed_stat = (
+        f'<div class="summary-stat"><span class="num">{report.skipped_closed:,d}'
+        '</span><span class="label">Closed</span></div>\n'
+        if report.skipped_closed else ""
+    )
+
     return (
         '<section class="summary">\n'
         '<h2>Summary</h2>\n'
@@ -1242,7 +1266,8 @@ def _render_html_summary(report: Report) -> str:
         '</p>\n'
         '<div class="summary-stats">\n'
         f'<div class="summary-stat"><span class="num">{report.total_findings:,d}'
-        '</span><span class="label">Findings</span></div>\n'
+        f'</span><span class="label">{open_label}</span></div>\n'
+        f'{closed_stat}'
         f'<div class="summary-stat"><span class="num">{len(report.groups):,d}'
         '</span><span class="label">Fix groups</span></div>\n'
         f'<div class="summary-sev">{"".join(sev_pills)}</div>\n'

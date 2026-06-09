@@ -43,9 +43,37 @@ def test_skip_mitigated_default():
 
 def test_include_mitigated_flag():
     findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
-    report = build_report(findings, skip_mitigated=False)
+    # The mitigated MD5 finding is also CLOSED (an accepted mitigation closes
+    # the flaw), so include both to surface it.
+    report = build_report(findings, skip_mitigated=False, skip_closed=False)
     cwes_kept = {g.cwe_id for g in report.groups}
     assert "CWE-327" in cwes_kept
+
+
+def test_skip_closed_default():
+    """Findings the REST API reports as CLOSED are dropped by default and
+    counted so the summary can show open vs. closed."""
+    findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
+    report = build_report(findings)  # skip_closed=True is default
+    assert report.skipped_closed == 1
+    cwes_kept = {g.cwe_id for g in report.groups}
+    assert "CWE-22" not in cwes_kept  # the closed path-traversal finding
+
+
+def test_include_closed_flag():
+    findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
+    report = build_report(findings, skip_closed=False)
+    cwes_kept = {g.cwe_id for g in report.groups}
+    assert "CWE-22" in cwes_kept
+
+
+def test_closed_count_surfaces_in_summary():
+    """Both markdown and HTML summaries report the closed count."""
+    findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
+    report = build_report(findings)
+    assert report.skipped_closed == 1
+    assert "**Closed:** 1" in report.to_markdown()
+    assert "Closed: 1" in report.to_html()
 
 
 def test_language_inference_from_path():
@@ -139,7 +167,7 @@ def test_findings_table_column_order_and_status():
     scanner finding status (e.g. OPEN) captured from the REST API."""
     # API findings carry a finding_status.status; include mitigated so all show.
     findings = ingest(FIXTURES / "findings-api-sample.json", format="api")
-    report = build_report(findings, skip_mitigated=False)
+    report = build_report(findings, skip_mitigated=False, skip_closed=False)
     md = report.to_markdown()
     # New header order — no Veracode column.
     assert "| Severity | Status | Issue ID | Title | Line | File |" in md
