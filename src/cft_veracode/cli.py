@@ -72,6 +72,20 @@ def _add_common_filters(p: argparse.ArgumentParser) -> None:
                    help="Include findings already marked mitigated (default: skip)")
     p.add_argument("--include-closed", action="store_true",
                    help="Include findings the scanner reports as CLOSED (default: skip)")
+    p.add_argument("--view", default="findings", choices=["findings", "control-plan"],
+                   help="findings: one section per fix group, remediation attached "
+                        "(default). control-plan: pivot onto the fix axis and sequence "
+                        "the work by risk retired per unit of effort.")
+    p.add_argument("--budget", type=float, default=None, metavar="UNITS",
+                   help="control-plan only: stop planning once this much effort is spent")
+    p.add_argument("--target-pct", type=float, default=None, metavar="PCT",
+                   help="control-plan only: stop once this share of weighted risk is "
+                        "retired. Usually more useful than --budget for the "
+                        "'what is the 80%% move?' question.")
+    p.add_argument("--recurrence-penalty", type=float, default=0.0, metavar="X",
+                   help="control-plan only: price the ongoing cost of controls a "
+                        "developer must remember at every future call site, so "
+                        "class-eliminating fixes compete fairly (try 1.0)")
 
 
 def _cmd_ingest(args) -> int:
@@ -123,21 +137,24 @@ def _cmd_fetch(args) -> int:
 
 
 def _emit(args, findings) -> int:
-    report = build_report(
-        findings,
-        language=args.language,
-        effort_cap=args.effort_cap,
-        skip_mitigated=not args.include_mitigated,
-        skip_closed=not args.include_closed,
-        min_severity=args.min_severity,
-    )
+    if getattr(args, "view", "findings") == "control-plan":
+        doc = _build_control_plan(args, findings)
+    else:
+        doc = build_report(
+            findings,
+            language=args.language,
+            effort_cap=args.effort_cap,
+            skip_mitigated=not args.include_mitigated,
+            skip_closed=not args.include_closed,
+            min_severity=args.min_severity,
+        )
 
     if args.output_format == "html":
-        out = report.to_html()
+        out = doc.to_html()
     elif args.output_format == "markdown":
-        out = report.to_markdown()
+        out = doc.to_markdown()
     else:
-        out = report.to_json()
+        out = doc.to_json()
 
     if args.output == "-":
         print(out)
@@ -149,15 +166,40 @@ def _emit(args, findings) -> int:
     return 0
 
 
+def _build_control_plan(args, findings):
+    """Pivot the scan onto the fix axis instead of grouping by finding."""
+    from cft.portfolio import CostModel
+    from cft_veracode.portfolio_adapter import build_control_plan
+
+    if args.min_severity:
+        from cft_veracode.types import SEVERITY_RANK
+        floor = SEVERITY_RANK.get(args.min_severity, -1)
+        findings = [f for f in findings if SEVERITY_RANK.get(f.severity, -1) >= floor]
+
+    return build_control_plan(
+        findings,
+        language=args.language,
+        effort_cap=args.effort_cap,
+        budget=args.budget,
+        target_pct=args.target_pct,
+        cost_model=CostModel(recurrence_penalty=args.recurrence_penalty),
+        skip_mitigated=not args.include_mitigated,
+    )
+
+
 def _default_output_path(args) -> str:
     ext = _EXT_FOR_FORMAT.get(args.output_format, args.output_format)
+    if getattr(args, "view", "findings") == "control-plan":
+        prefix = "CFT-ControlPlan"
+    else:
+        prefix = "CFT-Report"
     if args.cmd == "ingest":
         label = Path(args.source).stem
     else:
         label = args.app
         if getattr(args, "sandbox", None):
             label = f"{label}-{args.sandbox}"
-    return f"CFT-Report-{_slugify(label)}.{ext}"
+    return f"{prefix}-{_slugify(label)}.{ext}"
 
 
 def _slugify(value: str) -> str:

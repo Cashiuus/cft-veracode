@@ -106,6 +106,33 @@ cft-veracode ingest scan.json --format pipeline --output-format json --output -
 cft-veracode ingest scan.json --format pipeline --output my-report.html
 ```
 
+## Two views of a scan
+
+`--view findings` (the default, described above) produces one section per fix group with remediation attached — the right shape when someone is working through a backlog.
+
+`--view control-plan` pivots onto the **fix axis** instead: the unit of work becomes the technique, not the finding, and the report answers "which changes, applied where, retire the most risk per unit of effort, and in what order?"
+
+```
+# The 80% move, with durability priced in
+cft-veracode ingest scan.json --format pipeline --view control-plan \
+    --target-pct 80 --recurrence-penalty 1.0
+
+# What can I get for 20 effort units?
+cft-veracode fetch --app DemoApp --view control-plan --budget 20
+
+# Machine-readable, for ticketing or a dashboard
+cft-veracode ingest scan.json -f pipeline --view control-plan \
+    --output-format json --output -
+```
+
+Writes `CFT-ControlPlan-<source>.<ext>` by default. HTML, Markdown and JSON are all supported, and the HTML is the same single-file, offline-viewable, dark-theme document as the findings report.
+
+Every row states **why** that technique was selected — `interchangeable` (the taxonomy says free choice is fine), `preferred` (it is the taxonomy's top-ranked option), `whole partition` (context-specific techniques planned together because the scan did not say which context applies), `all required` (a conjunction) — plus whether the fix **eliminates the class** or is a **recurring control** a developer must remember at every future call site.
+
+`--recurrence-penalty` is worth understanding. A plain effort model always prefers cheap point fixes over substrate changes, because the substrate change's payoff is in costs never incurred. Setting it to `1.0` prices the ongoing tax of recurring controls, which is usually enough for a class-eliminating fix (an auto-escaping template engine over four hand-applied encoders) to win outright.
+
+The report also has a **confirmation section** rather than pretending every choice is settled. Veracode does not report sink context, and a file extension cannot tell an HTML-body sink from a JS-string sink inside the same `.jsp`, so where the taxonomy says techniques must be *matched* to a context the plan applies all of them and tells you that supplying context would narrow it. Where a CWE covers several distinct situations with different fixes (CWE-200 spans error pages, logs, cookies and URLs), it names the situations and asks you to confirm which one the finding actually is.
+
 ## Library usage
 
 ```python
